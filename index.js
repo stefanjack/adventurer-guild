@@ -176,17 +176,17 @@ client.on("message", msg => {
 			if(content.startsWith("fight kazuma")) {
 				var battleLog=adventurer[msg.guild.id][msg.author.id].fight(msg.author.username,"Kazuma",Adventurer.Kazuma);
 				msg.channel.sendMessage("```"+battleLog+"```");
-				fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*adventurer[msg.guild.id][msg.author.id].level)];
+				fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*50+10)];
 			}
 			else if(content.startsWith("fight aqua")) {
 				var battleLog=adventurer[msg.guild.id][msg.author.id].fight(msg.author.username,"Aqua",Adventurer.Aqua);
 				msg.channel.sendMessage("```"+battleLog+"```");
-				fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*adventurer[msg.guild.id][msg.author.id].level)];
+				fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*50+10)];
 			}
 			else if(content.startsWith("fight megumin")) {
 				var battleLog=adventurer[msg.guild.id][msg.author.id].fight(msg.author.username,"Megumin",Adventurer.Megumin);
 				msg.channel.sendMessage("```"+battleLog+"```");
-				fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*adventurer[msg.guild.id][msg.author.id].level)];
+				fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*50+10)];
 			}
 			else {
 				//check no mention
@@ -207,7 +207,7 @@ client.on("message", msg => {
 					var shadow=adventurer[msg.guild.id][msg.author.id].getShadow(10);
 					var battleLog=adventurer[msg.guild.id][msg.author.id].fight(msg.author.username,client.user.username,shadow);
 					msg.channel.sendMessage("```"+battleLog+"```");
-					fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*adventurer[msg.guild.id][msg.author.id].level)];
+					fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*50+10)];
 					if(!battleLog.endsWith(client.user.username+" wins!\n")){
 						//eris reward
 						var reward=Math.ceil(Math.random()*adventurer[msg.guild.id][msg.author.id].level);
@@ -222,12 +222,14 @@ client.on("message", msg => {
 					var prelevel2=adventurer[msg.guild.id][enemyID].level;
 					var battleLog=adventurer[msg.guild.id][msg.author.id].fight(msg.author.username,enemyUser.username,adventurer[msg.guild.id][enemyID]);
 					msg.channel.sendMessage("```"+battleLog+"```");
-					fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*adventurer[msg.guild.id][msg.author.id].level)];
+					fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*50+10)];
 					if(adventurer[msg.guild.id][enemyID].level>prelevel2) msg.channel.sendMessage(enemyUser+" leveled up!");
 					//check quests if win
 					if(battleLog.endsWith(msg.author.username+" wins!\n")){
 						if(questAll[msg.guild.id]!=undefined){
-							if(enemyID==questAll[msg.guild.id]){
+							console.log(enemyID);
+							console.log(questAll[msg.guild.id]);
+							if(enemyID==questAll[msg.guild.id][0]){
 								if(questAllDone[msg.guild.id][msg.author.id]==undefined)questAllDone[msg.guild.id][msg.author.id]=0;
 								questAllDone[msg.guild.id][msg.author.id]++;
 								//check quest complete
@@ -241,7 +243,7 @@ client.on("message", msg => {
 							}
 						}
 						if(quest[msg.guild.id][msg.author.id]!=undefined){
-							if(enemyID==quest[msg.guild.id][msg.author.id]){
+							if(enemyID==quest[msg.guild.id][msg.author.id][0]){
 								questDone[msg.guild.id][msg.author.id]++;
 								//check quest complete
 								if(questDone[msg.guild.id][msg.author.id]>=quest[msg.guild.id][msg.author.id][1]){
@@ -265,7 +267,7 @@ client.on("message", msg => {
 	}
 	
 	//reincarnate
-	else if(content.startsWith("reincarnate me")){
+	else if(content=="reincarnate me"){
 		//check is adventurer
 		if(adventurer[msg.guild.id][msg.author.id]!=undefined){
 			console.log("reincarnate");
@@ -348,6 +350,11 @@ client.on("message", msg => {
 			else if(server[x].luck>server[top].luck)top=x;
 		}
 		text+="Highest LUCK: "+client.users.get(top).username+" ("+server[top].luck+")\n";
+		for(x in server){
+			if(top==undefined)top=x;
+			else if(server[x].eris>server[top].eris)top=x;
+		}
+		text+="Most eris   : "+client.users.get(top).username+" ("+server[top].eris+")\n";
 		for(x in server){
 			if(top==undefined)top=x;
 			else if(server[x].pantsu>server[top].pantsu)top=x;
@@ -442,7 +449,7 @@ client.on("message", msg => {
 var questFlavor=[
 "He has attempted to kidnap the Goddess. Serve him JUSTICE. Or Pizza.",
 "Battle-Crazed Idiots ran rampant on the street!",
-"The cultists is causing trouble!",
+"The cultists are causing trouble!",
 "A wild adventurer appeared!",
 "He is WANTED!",
 "The guild want 'em dead... Once is not enough."
@@ -460,4 +467,4 @@ client.on('ready', () => {
 	//setTimeout(doEvent,eventTime);
 });
 
-client.login("TOKENHERE");
+client.login("TOKEN");

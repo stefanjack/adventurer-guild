@@ -35,6 +35,7 @@ Adventurer.prototype.set = function(level, experience, strength, health, magicpo
 	this.luck = luck;
 	this.reincarnate = reincarnate;
 	this.pantsu = pantsu;
+	this.eris = eris;
 	//back compability
 	if(isNaN(reincarnate))this.reincarnate = 0;
 	if(isNaN(pantsu))this.pantsu = 0;
@@ -130,12 +131,12 @@ Adventurer.prototype.getExp = function(exp){
 Adventurer.prototype.levelUp = function(){
 	this.level+=1;
 	var reBonus=Math.ceil(this.reincarnate/100);
-	this.strength+=Math.floor((Math.random() * 2+reBonus) + 1);
-	this.health+=Math.floor((Math.random() * 2+reBonus) + 1);
-	this.magicpower+=Math.floor((Math.random() * 2+reBonus) + 1);
-	this.dexterity+=Math.floor((Math.random() * 2+reBonus) + 1);
-	this.agility+=Math.floor((Math.random() * 2+reBonus) + 1);
-	this.luck+=Math.floor((Math.random() * 2+reBonus) + 1);
+	this.strength+=Math.floor((Math.random() * (2+reBonus)) + 1);
+	this.health+=Math.floor((Math.random() * (2+reBonus)) + 1);
+	this.magicpower+=Math.floor((Math.random() * (2+reBonus)) + 1);
+	this.dexterity+=Math.floor((Math.random() * (2+reBonus)) + 1);
+	this.agility+=Math.floor((Math.random() * (2+reBonus)) + 1);
+	this.luck+=Math.floor((Math.random() * (2+reBonus)) + 1);
 }
 
 //parameter: this name, enemy name, enemy adventurer
