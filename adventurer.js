@@ -102,18 +102,9 @@ Adventurer.prototype.jobclass = function(){
 		return "Adventurer";
 }
 
-var Kazuma = new Adventurer();
-Kazuma.set(1,0,13,12,9,14,15,792,0,0);
-var Aqua = new Adventurer();
-Aqua.set(21,0,72,81,26,3,46,1,0,0);
-var Megumin = new Adventurer();
-Megumin.set(6,0,17,26,231,32,21,18,0,0);
-var bot = new Adventurer();
-bot.set(1,0,999,999,999,999,999,999,0,0);
-
 Adventurer.prototype.getShadow = function(multiplier){
 	var shadow=new Adventurer();
-	shadow.set(1,0,this.strength*multiplier,this.health*multiplier,this.magicpower*multiplier,this.dexterity*multiplier,this.agility*multiplier,this.luck*multiplier,0,0);
+	shadow.set(1,0,this.strength*multiplier,this.health*multiplier,this.magicpower*multiplier,this.dexterity*multiplier,this.agility*multiplier,this.luck*multiplier);
 	return shadow;
 }
 
@@ -126,6 +117,18 @@ Adventurer.prototype.getExp = function(exp){
 		//recheck lv up again
 		this.getExp(0);
 	}
+}
+
+Adventurer.prototype.randomGain = function(){
+	var reBonus=Math.ceil(this.reincarnate/100);
+	var bonus_type = Math.floor((Math.random() * 6));
+	var bonus_val = Math.ceil(Math.random() * (2+reBonus));
+	if(bonus_type==0)this.strength+=bonus_val;
+	else if(bonus_type==1)this.health+=bonus_val;
+	else if(bonus_type==2)this.magicpower+=bonus_val;
+	else if(bonus_type==3)this.dexterity+=bonus_val;
+	else if(bonus_type==4)this.agility+=bonus_val;
+	else if(bonus_type==5)this.luck+=bonus_val;
 }
 
 Adventurer.prototype.levelUp = function(){
@@ -170,7 +173,7 @@ attack:100,
 explosion:10,
 steal:50,
 godblow:50,
-blast:40
+lightofsaber:40
 };
 
 Adventurer.prototype.combat = function(name1, name2, target){
@@ -185,7 +188,7 @@ Adventurer.prototype.combat = function(name1, name2, target){
 			else if(attack=="explosion")return this.explosion(name1, name2, target);
 			else if(attack=="steal")return this.steal(name1, name2, target);
 			else if(attack=="godblow")return this.godblow(name1, name2, target);
-			else if(attack=="blast")return this.blast(name1, name2, target);
+			else if(attack=="lightofsaber")return this.lightofsaber(name1, name2, target);
 		}
 		else skill-=odds[attack];
 	}
@@ -227,17 +230,23 @@ Adventurer.prototype.godblow = function(name1, name2, target){
 	return [name1+" used GOD BLOW! "+name2+" took 1 damage... Pfft",1];
 }
 
-Adventurer.prototype.blast =  function(name1, name2, target){
+Adventurer.prototype.lightofsaber =  function(name1, name2, target){
 	if(this.jobclass()=="Crusader")
-		return [name1+" used Blast... Just kidding... Tee-hee",0];
+		return [name1+" used Light of Saber... Just kidding... Tee-hee",0];
 	var randomizer=Math.random()+0.5;
 	var multiplier=1.2;
 	var damage=Math.ceil(this.magicpower*multiplier*randomizer);
-	return [name1+" used Blast! "+name2+" took "+damage+" damage!",damage];
+	return [name1+" used Light of Saber! "+name2+" took "+damage+" damage!",damage];
 }
+
+var Kazuma = new Adventurer();
+Kazuma.set(1,0,13,12,9,14,15,792,0,0);
+var Aqua = new Adventurer();
+Aqua.set(21,0,72,81,26,3,46,1,0,0);
+var Megumin = new Adventurer();
+Megumin.set(6,0,17,26,231,32,21,18,0,0);
 
 module.exports=Adventurer;
 module.exports.Kazuma=Kazuma;
 module.exports.Aqua=Aqua;
 module.exports.Megumin=Megumin;
-module.exports.bot=bot;

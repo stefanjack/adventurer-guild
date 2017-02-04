@@ -1,15 +1,31 @@
 var Discord = require("discord.js");
 var client = new Discord.Client();
 
+var express = require('express');
+var app     = express();
+
+app.set('port', (process.env.PORT || 8080));
+app.get('/', function(request, response) {
+    var result = 'App is running'
+    response.send(result);
+}).listen(app.get('port'), function() {
+    console.log('App is running, server is listening on port ', app.get('port'));
+});
+
 var Adventurer=require("./adventurer.js");
 var adventurer={};
+
 var fightCooldown={};
+
 var questAll={};
 var quest={};
 var questAllDone={};
 var questDone={};
 
+var botChannel={};
+
 var fs=require("fs");
+
 if(fs.existsSync("./adventurer.txt")){
 	//load
 	var adventurerReader = require('readline').createInterface({
@@ -28,6 +44,51 @@ if(fs.existsSync("./adventurer.txt")){
 	console.log("Data loaded!");
 }
 else console.log("Save data not found!");
+
+if(fs.existsSync("./quest.txt")){
+	//load
+	var questReader = require('readline').createInterface({
+		input: fs.createReadStream('./quest.txt')
+	});
+	questReader.on('line', function (line) {
+		var obj=line.split("|");
+		if(obj[0]=="questAll"){
+			questAll[obj[1]]=[obj[2],parseInt(obj[3]),obj[4].replace(/!p/g,"|").replace(/!e/g,"!")];
+		}
+		else if(obj[0]=="questAllDone"){
+			if(questAllDone[obj[1]]==undefined)questAllDone[obj[1]]={};
+			questAllDone[obj[1]][obj[2]]=parseInt(obj[3]);
+		}
+		else if(obj[0]=="quest"){
+			if(quest[obj[1]]==undefined)quest[obj[1]]={};
+			quest[obj[1]][obj[2]]=[obj[3],parseInt(obj[4]),obj[5].replace(/!p/g,"|").replace(/!e/g,"!")];
+		}
+		else if(obj[0]=="questDone"){
+			if(questDone[obj[1]]==undefined)questDone[obj[1]]={};
+			questAllDone[obj[1]][obj[2]]=parseInt(obj[3]);
+		}
+	});
+	console.log("Quest loaded!");
+}
+else console.log("Quest data not found!");
+
+function loadChannel(){
+	if(fs.existsSync("./channel.txt")){
+		//load
+		var channelReader = require('readline').createInterface({
+			input: fs.createReadStream('./channel.txt')
+		});
+		channelReader.on('line', function (line) {
+			var obj=line.split(",");
+			botChannel[obj[0]]=client.channels.get(obj[1]);
+			//start event
+			var eventTime=Math.ceil(Math.random()*35400000)+600000; //10 mins~10 hrs
+			setTimeout(function(){openEvent(obj[0]);},eventTime);
+		});
+		console.log("Channel loaded!");
+	}
+	else console.log("Channel data not found!");
+}
 
 function createSaveText(){
 	var savetext="";
@@ -49,11 +110,53 @@ function createSaveText(){
 	}
 	return savetext;
 }
+
 function saveData(){
 	var savetext=createSaveText();
-	fs.writeFileSync('./adventurer.txt', savetext,  function(err) {
+	fs.writeFile('./adventurer.txt', savetext,  function(err) {
 		if (err) return console.error(err);
 		console.log("Data saved!");
+	});
+}
+
+function createQuestText(){
+	var savetext="";
+	for(x in questAll){
+		savetext+="questAll|"+x+"|"+questAll[x][0]+"|"+questAll[x][1]+"|"+questAll[x][2].replace(/!/g,"!e").replace(/\|/g,"!p")+"\n";
+		for(y in questAllDone[x]){
+			savetext+="questAllDone|"+x+"|"+y+"|"+questAllDone[x][y]+"\n";
+		}
+	}
+	for(x in quest){
+		for(y in quest[x]){
+			savetext+="quest|"+x+"|"+y+"|"+quest[x][y][0]+"|"+quest[x][y][1]+"|"+quest[x][y][2].replace(/!/g,"!e").replace(/\|/g,"!p")+"\n";
+			savetext+="questDone|"+x+"|"+y+"|"+questDone[x][y]+"\n";
+		}
+	}
+	return savetext;
+}
+
+function saveQuest(){
+	var savetext=createQuestText();
+	fs.writeFile('./quest.txt', savetext,  function(err) {
+		if (err) return console.error(err);
+		console.log("Quest saved!");
+	});
+}
+
+function createChannelText(){
+	var savetext="";
+	for(guild in botChannel){
+		savetext+=guild+","+botChannel[guild].id+"\n";
+	}
+	return savetext;
+}
+
+function saveChannel(){
+	var savetext=createChannelText();
+	fs.writeFile('./channel.txt', savetext,  function(err) {
+		if (err) return console.error(err);
+		console.log("Channel saved!");
 	});
 }
 
@@ -93,9 +196,12 @@ client.on("message", msg => {
 	if(questAllDone[msg.guild.id]==undefined)questAllDone[msg.guild.id]={};
 	if(questDone[msg.guild.id]==undefined)questDone[msg.guild.id]={};
 	
-	//admin get adventurers data
+	//admin get data
 	if(content.startsWith("<@"+client.user.id+"> data")){
-		if(msg.author.id=="206099144346042369")msg.author.sendMessage("```"+createSaveText()+"```");
+		if(msg.author.id=="206099144346042369")msg.author.sendMessage(
+		"adventurer\n```\n"+createSaveText()+"```\n"+
+		"quest\n```\n"+createQuestText()+"```\n"+
+		"channel\n```\n"+createChannelText()+"```\n");
 	}
 	
 	//admin reincarnate all (wipe)
@@ -107,6 +213,18 @@ client.on("message", msg => {
 			saveData();
 			return;
 		}
+	}
+	
+	//set bot channel for event
+	if(content.startsWith("<@"+client.user.id+"> here")){
+		botChannel[msg.guild.id]=msg.channel;
+		if(eventStatus[msg.guild.id]==undefined){
+			var eventTime=Math.ceil(Math.random()*35400000)+600000; //10 mins~10 hrs
+			setTimeout(function(){openEvent(msg.guild.id);},eventTime);
+		}
+		msg.channel.sendMessage("Roger");
+		saveChannel();
+		return;
 	}
 	
 	//help
@@ -122,6 +240,8 @@ client.on("message", msg => {
 		"issue quest      issue a quest for all\n"+
 		"quest start      start a quest for yourself\n"+
 		"quest list       show quest available\n"+
+		//"transfer eris    transfer eris to others\n"+
+		//"transfer pantsu  transfer pantsu to others\n"+
 		"```");
 	}
 	
@@ -155,7 +275,7 @@ client.on("message", msg => {
 			else msg.channel.sendMessage(mentionUser+" is not an adventurer!");
 		}
 		//self (check is adventurer)
-		else if(adventurer[msg.guild.id][msg.author.id+""]!=undefined) msg.channel.sendMessage(adventurer[msg.guild.id][msg.author.id].stats(msg.author.username));
+		else if(adventurer[msg.guild.id][msg.author.id]!=undefined) msg.channel.sendMessage(adventurer[msg.guild.id][msg.author.id].stats(msg.author.username));
 		else msg.channel.sendMessage(msg.author+" is not an adventurer! Use `new adventurer` command!");
 	}
 	
@@ -172,6 +292,25 @@ client.on("message", msg => {
 			}
 			console.log("fight");
 			var prelevel=adventurer[msg.guild.id][msg.author.id].level;
+			//if event
+			if(content.startsWith("fight event") && eventStatus[msg.guild.id]==2){
+				if(participator[msg.guild.id][msg.author.id]==undefined){
+					participator[msg.guild.id][msg.author.id]=new LiveAdv(adventurer[msg.guild.id][msg.author.id]);
+				}
+				//check dead
+				if(participator[msg.guild.id][msg.author.id].hp<=0){
+					msg.channel.sendMessage(msg.author+" you are dead!");
+					return;
+				}
+				var result=participator[msg.guild.id][msg.author.id].combat(msg.author.username,event[msg.guild.id][5],adventurer[msg.guild.id][msg.author.id],adversaries[msg.guild.id][0],adversaries[msg.guild.id][1]);
+				msg.channel.sendMessage("```"+result+"\n\n"+event[msg.guild.id][5]+" ("+adversaries[msg.guild.id][1].hpInfo(adversaries[msg.guild.id][0])+")```");
+				//if win
+				if(adversaries[msg.guild.id][1].hp<=0){
+					clearTimeout(closingEvent[msg.guild.id]);
+					closeEvent(msg.guild.id,true);
+				}
+				return;
+			}
 			//if preset enemy
 			if(content.startsWith("fight kazuma")) {
 				var battleLog=adventurer[msg.guild.id][msg.author.id].fight(msg.author.username,"Kazuma",Adventurer.Kazuma);
@@ -227,8 +366,6 @@ client.on("message", msg => {
 					//check quests if win
 					if(battleLog.endsWith(msg.author.username+" wins!\n")){
 						if(questAll[msg.guild.id]!=undefined){
-							console.log(enemyID);
-							console.log(questAll[msg.guild.id]);
 							if(enemyID==questAll[msg.guild.id][0]){
 								if(questAllDone[msg.guild.id][msg.author.id]==undefined)questAllDone[msg.guild.id][msg.author.id]=0;
 								questAllDone[msg.guild.id][msg.author.id]++;
@@ -255,6 +392,8 @@ client.on("message", msg => {
 								}
 							}
 						}
+						//save
+						saveQuest();
 					}
 				}
 				else msg.channel.sendMessage(enemyUser+" is not an adventurer!");
@@ -387,6 +526,8 @@ client.on("message", msg => {
 		questAll[msg.guild.id]=[arrayID[Math.floor(Math.random()*arrayID.length)],Math.ceil(Math.random()*3+1)*5,questFlavor[Math.floor(Math.random()*questFlavor.length)]];
 		questAllDone[msg.guild.id]={};
 		msg.channel.sendMessage("Quest issued!\nKill "+questAll[msg.guild.id][1]+" "+client.users.get(questAll[msg.guild.id][0]).username+"!\n"+questAll[msg.guild.id][2]);
+		//save
+		saveQuest();
 	}
 	
 	//start (personal) quest
@@ -421,6 +562,8 @@ client.on("message", msg => {
 		quest[msg.guild.id][msg.author.id]=[randomID,Math.ceil(Math.random()*3+1)*5,questFlavor[Math.floor(Math.random()*questFlavor.length)]];
 		questDone[msg.guild.id][msg.author.id]=0;
 		msg.channel.sendMessage("Quest started!\nKill "+quest[msg.guild.id][msg.author.id][1]+" "+client.users.get(quest[msg.guild.id][msg.author.id][0]).username+"!\n"+quest[msg.guild.id][msg.author.id][2]);
+		//save
+		saveQuest();
 	}
 	
 	//quest list
@@ -444,6 +587,196 @@ client.on("message", msg => {
 		else text+="None";
 		msg.channel.sendMessage("```"+text+"```");
 	}
+	
+	/*//transfer
+	else if(content.startsWith("transfer ")){
+		//check is adventurer
+		if(adventurer[msg.guild.id][msg.author.id]==undefined){
+			msg.channel.sendMessage(msg.author+" is not an adventurer! Use `new adventurer` command!");
+			return;
+		}
+		if(content.startsWith("transfer eris")){
+			var passed=true;
+			//check no mention
+			if(msg.mentions.users.array().length==0 || !content.startsWith("transfer eris <@"))
+				passed=false;
+			//check sum
+			var sum=content.substr(content.indexOf(">")+2).trim().split(" ")[0];
+			if(isNaN(parseInt(sum)) || !isFinite(sum) || sum.indexOf(".")>=0 || !passed){
+				//usage help
+				msg.channel.sendMessage("```Usage:\ntransfer eris <mention> <sum>\n\nInfo:\ntransfer eris to others```");
+				return;
+			}
+			sum=parseInt(sum);
+			var targetID=msg.mentions.users.firstKey();
+			var targetUser=client.users.get(targetID);
+			//check enough balance
+			if(adventurer[msg.guild.id][msg.author.id].eris<sum){
+				msg.channel.sendMessage(msg.author+" short on money? Do some quest!");
+				return;
+			}
+			//check target is not self
+			if(msg.author.id==targetID){
+				msg.channel.sendMessage(msg.author+" *throws back your money*");
+				return;
+			}
+			//check target is adventurer
+			if(adventurer[msg.guild.id][targetID]==undefined){
+				msg.channel.sendMessage(targetUser+" is not an adventurer!");
+				return;
+			}
+			console.log("transfer eris");
+			adventurer[msg.guild.id][msg.author.id].eris-=sum;
+			adventurer[msg.guild.id][targetID].eris+=sum;
+			msg.channel.sendMessage(msg.author+" has given "+targetUser+" "+sum+" eris. Be thankful!");
+			//save
+			saveData();
+		}
+		else if(content.startsWith("transfer pantsu")){
+			var passed=true;
+			//check no mention
+			if(msg.mentions.users.array().length==0 || !content.startsWith("transfer pantsu <@"))
+				passed=false;
+			//check sum
+			var sum=content.substr(content.indexOf(">")+2).trim().split(" ")[0];
+			if(isNaN(parseInt(sum)) || !isFinite(sum) || sum.indexOf(".")>=0 || !passed){
+				//usage help
+				msg.channel.sendMessage("```Usage:\ntransfer pantsu <mention> <sum>\n\nInfo:\ntransfer pantsu to others```");
+				return;
+			}
+			sum=parseInt(sum);
+			var targetID=msg.mentions.users.firstKey();
+			var targetUser=client.users.get(targetID);
+			//check enough pantsu
+			if(adventurer[msg.guild.id][msg.author.id].pantsu<sum){
+				msg.channel.sendMessage(msg.author+" you don't have the *goods*, go steal some!");
+				return;
+			}
+			//check target is not self
+			if(msg.author.id==targetID){
+				msg.channel.sendMessage(msg.author+" *throws back your pantsu*");
+				return;
+			}
+			//check target is adventurer
+			if(adventurer[msg.guild.id][targetID]==undefined){
+				msg.channel.sendMessage(targetUser+" is not an adventurer!");
+				return;
+			}
+			console.log("transfer pantsu");
+			adventurer[msg.guild.id][msg.author.id].pantsu-=sum;
+			adventurer[msg.guild.id][targetID].pantsu+=sum;
+			msg.channel.sendMessage(msg.author+" has *sneakily* given "+targetUser+" "+sum+" pantsu(s). Be grateful!");
+			//save
+			saveData();
+		}
+	}*/
+	
+	//shop list
+	else if(content=="shop list" && eventStatus[msg.guild.id]==1){
+		msg.channel.sendMessage("To buy use `shop <item number>` command"+
+		"```Welcome to Wiz Shop!\n\n"+
+		"1. Potion      (100 eris) Restores HP\n"+
+		"2. Wiz Special (9 pantsu) Permanently increase random stat (limited offer)\n"+
+		"(item will vaporate after the event ended)```");
+	}
+	
+	//shop buy
+	else if(content.startsWith("shop ") && eventStatus[msg.guild.id]==1){
+		//check is adventurer
+		if(adventurer[msg.guild.id][msg.author.id]==undefined){
+			msg.channel.sendMessage(msg.author+" is not an adventurer! Use `new adventurer` command!");
+			return;
+		}
+		var number=content.substr(5);
+		if(number=="1"){
+			//potion
+			//check eris
+			if(adventurer[msg.guild.id][msg.author.id].eris<100){
+				msg.channel.sendMessage(msg.author+" short on money? Go home!");
+				return;
+			}
+			if(participator[msg.guild.id][msg.author.id]==undefined){
+				participator[msg.guild.id][msg.author.id]=new LiveAdv(adventurer[msg.guild.id][msg.author.id]);
+			}
+			adventurer[msg.guild.id][msg.author.id].eris-=100;
+			participator[msg.guild.id][msg.author.id].potion++;
+			msg.channel.sendMessage(msg.author+" bought potion!");
+			//save
+			saveData();
+		}
+		else if(number=="2"){
+			//Wiz Special
+			//check pantsu
+			if(adventurer[msg.guild.id][msg.author.id].pantsu<9){
+				msg.channel.sendMessage(msg.author+" short on pantsu? ¯\\\_(ツ)\_/¯");
+				return;
+			}
+			adventurer[msg.guild.id][msg.author.id].pantsu-=9;
+			adventurer[msg.guild.id][msg.author.id].randomGain();
+			msg.channel.sendMessage(msg.author+" feels kinda stronger");
+			//save
+			saveData();
+		}
+	}
+	
+	//command list
+	else if(content=="command list" && eventStatus[msg.guild.id]==2){
+		msg.channel.sendMessage("```Commands:\n\n"+
+		"fight event  fight the boss\n"+
+		"check party  see party's HP\n"+
+		"use potion   use your potion on someone\n"+
+		"```");
+	}
+	
+	//check party
+	else if(content=="check party" && eventStatus[msg.guild.id]==2){
+		var text="```\n";
+		for(x in participator[msg.guild.id]){
+			text+=client.users.get(x).username+"\n"+participator[msg.guild.id][x].stat(adventurer[msg.guild.id][x])+"\n\n";
+		}
+		msg.channel.sendMessage(text+"```");
+	}
+	
+	//potion
+	else if(content.startsWith("use potion") && eventStatus[msg.guild.id]==2){
+		//check is adventurer
+		if(adventurer[msg.guild.id][msg.author.id]==undefined){
+			msg.channel.sendMessage(msg.author+" is not an adventurer! Use `new adventurer` command!");
+			return;
+		}
+		if(participator[msg.guild.id][msg.author.id]==undefined){
+			participator[msg.guild.id][msg.author.id]=new LiveAdv(adventurer[msg.guild.id][msg.author.id]);
+		}
+		//check target
+		if(msg.mentions.users.array().length>0) {
+			var mentionID=msg.mentions.users.firstKey();
+			var mentionUser=client.users.get(mentionID);
+			//check mentioned is not adventurer
+			if(adventurer[msg.guild.id][mentionID]!=undefined){
+				if(participator[msg.guild.id][mentionID]==undefined){
+					participator[msg.guild.id][mentionID]=new LiveAdv(adventurer[msg.guild.id][mentionID]);
+				}
+				var result=participator[msg.guild.id][msg.author.id].usePotion(adventurer[msg.guild.id][mentionID],participator[msg.guild.id][mentionID]);
+				if(result.indexOf("dead")<0 && result.indexOf("any"))
+					msg.channel.sendMessage(msg.author+result+mentionUser+"```"+mentionUser.username+"\n"+participator[msg.guild.id][mentionID].stat(adventurer[msg.guild.id][mentionID])+"```");
+				else msg.channel.sendMessage(msg.author+result);
+			}
+			else msg.channel.sendMessage(mentionUser+" is not an adventurer!");
+		}
+		//self
+		else if(adventurer[msg.guild.id][msg.author.id]!=undefined){
+			var result=participator[msg.guild.id][msg.author.id].usePotion(adventurer[msg.guild.id][msg.author.id]);
+			if(result.indexOf("dead")<0 && result.indexOf("any"))
+				msg.channel.sendMessage(msg.author+result+"```"+msg.author.username+"\n"+participator[msg.guild.id][msg.author.id].stat(adventurer[msg.guild.id][msg.author.id])+"```");
+			else msg.channel.sendMessage(msg.author+result);
+		}
+	}
+	
+	//
+	else if(content=="i win" && eventStatus[msg.guild.id]==2){
+		clearTimeout(closingEvent[msg.guild.id]);
+		closeEvent(msg.guild.id,true);
+	}
 });
 
 var questFlavor=[
@@ -455,16 +788,103 @@ var questFlavor=[
 "The guild want 'em dead... Once is not enough."
 ];
 
+//event char
+var LiveAdv=require("./event.js");
+var eventChar={};
+
 //event
-function doEvent(){
+var event={};
+var eventStatus={}; // undefined or 0:none, 1:opened, 2:started
+var eventList=[
+//type,open,start,closeWin,closeLose,adversaryName
+//type 1: boss
+[1,"Announcement: A large dragon has been seen going near this town. The estimated time of its arrival will be within 10 minutes. All available adventurers, please ready your equipment for battle.","**THE DRAGON IS HERE!!!!!!**","The dragon has been slain... Good job!","The dragon lose interest and left...","Dragon"]
+
+];
+
+function getDragon(adv){
+	var dragon=new Adventurer();
+	var length=0;
+	dragon.set(0,0,0,0,0,0,0,0);
+	for(x in adv){
+		dragon.level+=adv[x].level;
+		dragon.strength+=adv[x].strength;
+		dragon.health+=adv[x].health;
+		dragon.magicpower+=adv[x].magicpower;
+		dragon.dexterity+=adv[x].dexterity;
+		dragon.agility+=adv[x].agility;
+		dragon.luck+=adv[x].luck;
+		dragon.eris+=adv[x].eris;
+		length++;
+	}
+	dragon.strength=Math.ceil(dragon.strength/2);
+	dragon.health*=10;
+	return dragon;
+}
+
+var closingEvent={};
+var participator={};
+var adversaries={};
+
+function openEvent(guild){
+	console.log("open event");
+	eventStatus[guild]=1;
+	participator[guild]={};
+	//random event
+	event[guild]=eventList[Math.floor(Math.random()*eventList.length)];
+	botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][1]+"\nEquipment shop has opened! Use `shop list` command");
 	
+	var eventTime=600000; //10 mins
+	setTimeout(function(){startEvent(guild);},eventTime);
+}
+
+function startEvent(guild){
+	console.log("start event");
+	eventStatus[guild]=2;
+	botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][2]+"\nEquipment shop has closed!\nUse `command list` command to see what you can do!");
+	//adversaries
+	if(event[guild][0]==1){
+		var dragon=getDragon(adventurer[guild]);
+		adversaries[guild]=[dragon,new LiveAdv(dragon)];
+	}
+	
+	var eventTime=3600000; //duration 1 hrs
+	closingEvent[guild]=setTimeout(function(){closeEvent(guild,false);},eventTime);
+}
+
+function closeEvent(guild,win){
+	console.log("close event");
+	eventStatus[guild]=0;
+	if(win){
+		//reward
+		var length=0;
+		for(x in participator[guild])length++;
+		var reward=Math.ceil(adversaries[guild][0].eris/length);
+		for(x in participator[guild]){
+			if(participator[guild][x].hp>0)adventurer[guild][x].eris+=reward;
+		}
+		botChannel[guild].sendMessage("`Raid Event`\n"+event[guild][3]+"\n\n"+reward+" eris for everyone participated! (if you are alive that is)");
+		saveData();
+	}
+	else botChannel[guild].sendMessage("`Raid Event`\n"+event[guild][4]);
+	
+	var eventTime=Math.ceil(Math.random()*35400000)+600000; //10 mins~10 hrs
+	setTimeout(function(){openEvent(guild);},eventTime);
 }
 
 client.on('ready', () => {
 	console.log('TO BATTLE!');
-	
-	//var eventTime=5000;//random
-	//setTimeout(doEvent,eventTime);
+	loadChannel();
 });
 
-client.login("TOKEN");
+//load
+var token;
+var tokenReader = require('readline').createInterface({
+	input: fs.createReadStream('./token.txt')
+});
+tokenReader.on('line', function (line) {
+	if(token==undefined){
+		token=line;
+		client.login(token);
+	}
+});
