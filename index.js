@@ -147,6 +147,7 @@ function createQuestText(){
 		for(y in quest[x]){
 			if(quest[x][y]==undefined)continue;
 			savetext+="quest|"+x+"|"+y+"|"+quest[x][y][0]+"|"+quest[x][y][1]+"|"+quest[x][y][2].replace(/!/g,"!e").replace(/\|/g,"!p")+"\n";
+			if(questDone[x][y]==undefined)continue;
 			savetext+="questDone|"+x+"|"+y+"|"+questDone[x][y]+"\n";
 		}
 	}
@@ -783,7 +784,7 @@ client.on("message", msg => {
 		}
 		//self
 		else if(adventurer[msg.guild.id][msg.author.id]!=undefined){
-			var result=participator[msg.guild.id][msg.author.id].usePotion(adventurer[msg.guild.id][msg.author.id]);
+			var result=participator[msg.guild.id][msg.author.id].usePotion(adventurer[msg.guild.id][msg.author.id],participator[msg.guild.id][msg.author.id]);
 			if(result.indexOf("dead")<0 && result.indexOf("any"))
 				msg.channel.sendMessage(msg.author+result+"```"+msg.author.username+"\n"+participator[msg.guild.id][msg.author.id].stat(adventurer[msg.guild.id][msg.author.id])+"```");
 			else msg.channel.sendMessage(msg.author+result);
