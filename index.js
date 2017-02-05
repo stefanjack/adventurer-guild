@@ -6,9 +6,23 @@ var app     = express();
 
 app.set('port', (process.env.PORT || 8080));
 app.get('/', function(request, response) {
-    var result = 'App is running'
+    var result = 'App is running';
     response.send(result);
-}).listen(app.get('port'), function() {
+})
+app.get('/adventurer', function(request, response) {
+    var result = createSaveText();
+    response.send("<pre>"+result+"</pre>");
+})
+app.get('/quest', function(request, response) {
+    var result = createQuestText();
+    response.send("<pre>"+result+"</pre>");
+})
+app.get('/channel', function(request, response) {
+    var result = createChannelText();
+    response.send("<pre>"+result+"</pre>");
+})
+
+app.listen(app.get('port'), function() {
     console.log('App is running, server is listening on port ', app.get('port'));
 });
 
@@ -82,6 +96,7 @@ function loadChannel(){
 			var obj=line.split(",");
 			botChannel[obj[0]]=client.channels.get(obj[1]);
 			//start event
+			eventStatus[obj[0]]=0;
 			var eventTime=Math.ceil(Math.random()*35400000)+600000; //10 mins~10 hrs
 			setTimeout(function(){openEvent(obj[0]);},eventTime);
 		});
@@ -122,6 +137,7 @@ function saveData(){
 function createQuestText(){
 	var savetext="";
 	for(x in questAll){
+		if(questAll[x]==undefined)continue;
 		savetext+="questAll|"+x+"|"+questAll[x][0]+"|"+questAll[x][1]+"|"+questAll[x][2].replace(/!/g,"!e").replace(/\|/g,"!p")+"\n";
 		for(y in questAllDone[x]){
 			savetext+="questAllDone|"+x+"|"+y+"|"+questAllDone[x][y]+"\n";
@@ -129,6 +145,7 @@ function createQuestText(){
 	}
 	for(x in quest){
 		for(y in quest[x]){
+			if(quest[x][y]==undefined)continue;
 			savetext+="quest|"+x+"|"+y+"|"+quest[x][y][0]+"|"+quest[x][y][1]+"|"+quest[x][y][2].replace(/!/g,"!e").replace(/\|/g,"!p")+"\n";
 			savetext+="questDone|"+x+"|"+y+"|"+questDone[x][y]+"\n";
 		}
@@ -219,6 +236,7 @@ client.on("message", msg => {
 	if(content.startsWith("<@"+client.user.id+"> here")){
 		botChannel[msg.guild.id]=msg.channel;
 		if(eventStatus[msg.guild.id]==undefined){
+			eventStatus[msg.guild.id]=0;
 			var eventTime=Math.ceil(Math.random()*35400000)+600000; //10 mins~10 hrs
 			setTimeout(function(){openEvent(msg.guild.id);},eventTime);
 		}
@@ -770,12 +788,6 @@ client.on("message", msg => {
 				msg.channel.sendMessage(msg.author+result+"```"+msg.author.username+"\n"+participator[msg.guild.id][msg.author.id].stat(adventurer[msg.guild.id][msg.author.id])+"```");
 			else msg.channel.sendMessage(msg.author+result);
 		}
-	}
-	
-	//
-	else if(content=="i win" && eventStatus[msg.guild.id]==2){
-		clearTimeout(closingEvent[msg.guild.id]);
-		closeEvent(msg.guild.id,true);
 	}
 });
 
