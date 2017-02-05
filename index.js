@@ -325,9 +325,24 @@ client.on("message", msg => {
 				msg.channel.sendMessage("```"+result+"\n\n"+event[msg.guild.id][5]+" ("+adversaries[msg.guild.id][1].hpInfo(adversaries[msg.guild.id][0])+")```");
 				//if win
 				if(adversaries[msg.guild.id][1].hp<=0){
-					clearTimeout(closingEvent[msg.guild.id]);
-					closeEvent(msg.guild.id,true);
+					adversaries[msg.guild.id][2]--;
+					//cabbage
+					if(event[msg.guild.id][0]==2){
+						adventurer[msg.guild.id][msg.author.id].eris+=100;
+						adventurer[msg.guild.id][msg.author.id].getExp(100);
+						msg.channel.sendMessage("*throws 100 eris at* "+msg.author);
+					}
+					if(adversaries[msg.guild.id][2]<=0){
+						clearTimeout(closingEvent[msg.guild.id]);
+						closeEvent(msg.guild.id,true);
+					}
+					else msg.channel.sendMessage(adversaries[msg.guild.id][2]+" "+event[msg.guild.id][5]+" left...");
 				}
+				fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*50+10)];
+				//check lv up
+				if(adventurer[msg.guild.id][msg.author.id].level>prelevel) msg.channel.sendMessage(msg.author+" leveled up!");
+				//save
+				saveData();
 				return;
 			}
 			//if preset enemy
@@ -696,7 +711,7 @@ client.on("message", msg => {
 		"```Welcome to Wiz Shop!\n\n"+
 		"1. Potion      (100 eris) Restores HP\n"+
 		"2. Wiz Special (9 pantsu) Permanently increase random stat (limited offer)\n"+
-		"(item will vaporate after the event ended)```");
+		"\n(item will vaporate after the event ended)```");
 	}
 	
 	//shop buy
@@ -732,7 +747,7 @@ client.on("message", msg => {
 			}
 			adventurer[msg.guild.id][msg.author.id].pantsu-=9;
 			adventurer[msg.guild.id][msg.author.id].randomGain();
-			msg.channel.sendMessage(msg.author+" feels kinda stronger");
+			msg.channel.sendMessage(msg.author+" bought Wiz Special... He feels kinda stronger");
 			//save
 			saveData();
 		}
@@ -748,7 +763,7 @@ client.on("message", msg => {
 	}
 	
 	//check party
-	else if(content=="check party" && eventStatus[msg.guild.id]==2){
+	else if(content=="check party" && eventStatus[msg.guild.id]>=1){
 		var text="```\n";
 		for(x in participator[msg.guild.id]){
 			text+=client.users.get(x).username+"\n"+participator[msg.guild.id][x].stat(adventurer[msg.guild.id][x])+"\n\n";
@@ -811,8 +826,10 @@ var eventStatus={}; // undefined or 0:none, 1:opened, 2:started
 var eventList=[
 //type,open,start,closeWin,closeLose,adversaryName
 //type 1: boss
-[1,"Announcement: A large dragon has been seen going near this town. The estimated time of its arrival will be within 10 minutes. All available adventurers, please ready your equipment for battle.","**THE DRAGON IS HERE!!!!!!**","The dragon has been slain... Good job!","The dragon lose interest and left...","Dragon"]
+[1,"Announcement: A large **DRAGON** has been seen going near this town. The estimated time of its arrival will be within 20 minutes. All available adventurers, please ready your equipment for battle.","**THE DRAGON IS HERE!!!!!!**","The dragon has been slain... Good job!","The dragon lose interest and left...","Dragon"],
 
+//type 2: swarm
+[2,"I apologize for gathering everyone on such short notice! I think everyone should know the emergency is because of the **CABBAGES**! Each one is worth 100 Eris! They will be ripe within 20 minutes.","It is time to harvest **CABBAGES**! Serve them on plate!","All cabbage have been caught! Fried cabbages is delicious!","The cabbages have flown faraway...","Cabbage"]
 ];
 
 function getDragon(adv){
@@ -830,9 +847,34 @@ function getDragon(adv){
 		dragon.eris+=adv[x].eris;
 		length++;
 	}
-	dragon.strength=Math.ceil(dragon.strength/2);
+	dragon.strength=Math.ceil(dragon.strength/length/2);
 	dragon.health*=10;
+	dragon.magicpower=Math.ceil(dragon.magicpower/length);
+	dragon.dexterity=Math.ceil(dragon.dexterity/length);
+	dragon.agility=Math.ceil(dragon.agility/length);
 	return dragon;
+}
+
+function getCabbage(adv){
+	var cabbage=new Adventurer();
+	var length=0;
+	cabbage.set(0,0,0,0,0,0,0,0);
+	for(x in adv){
+		cabbage.level+=adv[x].level;
+		cabbage.strength+=adv[x].strength;
+		cabbage.health+=adv[x].health;
+		cabbage.magicpower+=adv[x].magicpower;
+		cabbage.dexterity+=adv[x].dexterity;
+		cabbage.agility+=adv[x].agility;
+		cabbage.luck+=adv[x].luck;
+		length++;
+	}
+	cabbage.strength=Math.ceil(cabbage.strength/length/10);
+	cabbage.health=Math.ceil(cabbage.strength/length/10);
+	cabbage.magicpower=Math.ceil(cabbage.magicpower/length/10);
+	cabbage.dexterity=Math.ceil(cabbage.dexterity/length/10);
+	cabbage.agility=Math.ceil(cabbage.agility/length/10);
+	return cabbage;
 }
 
 var closingEvent={};
@@ -847,18 +889,24 @@ function openEvent(guild){
 	event[guild]=eventList[Math.floor(Math.random()*eventList.length)];
 	botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][1]+"\nEquipment shop has opened! Use `shop list` command");
 	
-	var eventTime=600000; //10 mins
+	var eventTime=1200000; //20 mins
 	setTimeout(function(){startEvent(guild);},eventTime);
 }
 
 function startEvent(guild){
 	console.log("start event");
 	eventStatus[guild]=2;
-	botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][2]+"\nEquipment shop has closed!\nUse `command list` command to see what you can do!");
+	botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][2]+"\nEveryone have evacuated, so equipment shop has closed!\nUse `command list` command to see what you can do!");
 	//adversaries
 	if(event[guild][0]==1){
-		var dragon=getDragon(adventurer[guild]);
-		adversaries[guild]=[dragon,new LiveAdv(dragon)];
+		var enemy=getDragon(adventurer[guild]);
+		adversaries[guild]=[enemy,new LiveAdv(enemy),1];
+	}
+	else if(event[guild][0]==2){
+		var enemy=getCabbage(adventurer[guild]);
+		//adversaries[guild]=[enemy,new LiveAdv(enemy),Math.ceil(Math.random()*15)+5];
+		adversaries[guild]=[enemy,new LiveAdv(enemy),3];
+		botChannel[guild].sendMessage(adversaries[guild][2]+" cabbages sighted!");
 	}
 	
 	var eventTime=3600000; //duration 1 hrs
@@ -870,16 +918,20 @@ function closeEvent(guild,win){
 	eventStatus[guild]=0;
 	if(win){
 		//reward
-		var length=0;
-		for(x in participator[guild])length++;
-		var reward=Math.ceil(adversaries[guild][0].eris/length);
-		for(x in participator[guild]){
-			if(participator[guild][x].hp>0)adventurer[guild][x].eris+=reward;
+		var reward=0;
+		if(event[guild][0]==1){
+			var length=0;
+			for(x in participator[guild])length++;
+			reward=Math.ceil(adversaries[guild][0].eris/length);
+			for(x in participator[guild]){
+				if(participator[guild][x].hp>0)adventurer[guild][x].eris+=reward;
+			}
 		}
-		botChannel[guild].sendMessage("`Raid Event`\n"+event[guild][3]+"\n\n"+reward+" eris for everyone participated! (if you are alive that is)");
+		if(event[guild][0]==2)reward=100;
+		botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][3]+"\n\n"+reward+" eris for everyone participated! (if you are alive that is)");
 		saveData();
 	}
-	else botChannel[guild].sendMessage("`Raid Event`\n"+event[guild][4]);
+	else botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][4]);
 	
 	var eventTime=Math.ceil(Math.random()*35400000)+600000; //10 mins~10 hrs
 	setTimeout(function(){openEvent(guild);},eventTime);

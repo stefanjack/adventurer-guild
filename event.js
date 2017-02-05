@@ -55,8 +55,6 @@ LiveAdventurer.prototype.attack = function(name1, name2, adv, target, liveTarget
 }
 
 LiveAdventurer.prototype.magic = function(name1, name2, adv, target, liveTarget){
-	if(adv.jobclass()=="Crusader")
-		return name1+" used a magic... Just kidding... Tee-hee";
 	var randomizer=Math.random()+0.5;
 	var multiplier=1;
 	var damage=Math.ceil(adv.magicpower*multiplier*randomizer);
@@ -66,11 +64,11 @@ LiveAdventurer.prototype.magic = function(name1, name2, adv, target, liveTarget)
 
 LiveAdventurer.prototype.usePotion = function(target, liveTarget){
 	//check dead
-	if(this.hp>0)return " you are dead!";
+	if(this.hp<0)return " you are dead!";
 	//check target dead
 	else if(liveTarget.hp<0)return " target already dead! There's no saving him (for now)";
 	//check have potion
-	else if(this.potion<1){
+	else if(this.potion>=1){
 		liveTarget.hp=target.health;
 		this.potion--;
 		return " have used potion on ";
