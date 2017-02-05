@@ -904,8 +904,7 @@ function startEvent(guild){
 	}
 	else if(event[guild][0]==2){
 		var enemy=getCabbage(adventurer[guild]);
-		//adversaries[guild]=[enemy,new LiveAdv(enemy),Math.ceil(Math.random()*15)+5];
-		adversaries[guild]=[enemy,new LiveAdv(enemy),3];
+		adversaries[guild]=[enemy,new LiveAdv(enemy),Math.ceil(Math.random()*15)+15];
 		botChannel[guild].sendMessage(adversaries[guild][2]+" cabbages sighted!");
 	}
 	
