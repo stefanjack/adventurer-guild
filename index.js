@@ -79,7 +79,7 @@ if(fs.existsSync("./quest.txt")){
 		}
 		else if(obj[0]=="questDone"){
 			if(questDone[obj[1]]==undefined)questDone[obj[1]]={};
-			questAllDone[obj[1]][obj[2]]=parseInt(obj[3]);
+			questDone[obj[1]][obj[2]]=parseInt(obj[3]);
 		}
 	});
 	console.log("Quest loaded!");
