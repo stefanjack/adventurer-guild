@@ -86,7 +86,10 @@ if(fs.existsSync("./quest.txt")){
 }
 else console.log("Quest data not found!");
 
+var channelLoaded=false;
+
 function loadChannel(){
+	if(channelLoaded)return;
 	if(fs.existsSync("./channel.txt")){
 		//load
 		var channelReader = require('readline').createInterface({
@@ -103,6 +106,7 @@ function loadChannel(){
 		console.log("Channel loaded!");
 	}
 	else console.log("Channel data not found!");
+	channelLoaded=true;
 }
 
 function createSaveText(){
@@ -405,8 +409,8 @@ client.on("message", msg => {
 								questAllDone[msg.guild.id][msg.author.id]++;
 								//check quest complete
 								if(questAllDone[msg.guild.id][msg.author.id]>=questAll[msg.guild.id][1]){
-									//reward & reset quest
-									var reward=Math.ceil(Math.random()*adventurer[msg.guild.id][questAll[msg.guild.id][0]].level*questAll[msg.guild.id][1]);
+									//reward & reset quest (quest all reward x10)
+									var reward=Math.ceil(Math.random()*adventurer[msg.guild.id][questAll[msg.guild.id][0]].level*questAll[msg.guild.id][1]*3);
 									adventurer[msg.guild.id][msg.author.id].eris+=reward;
 									questAll[msg.guild.id]=undefined;
 									msg.channel.sendMessage(msg.author+"You have completed the shared quest!\n*throws "+reward+" eris at you*");
@@ -569,11 +573,6 @@ client.on("message", msg => {
 		//check is adventurer
 		if(adventurer[msg.guild.id][msg.author.id]==undefined){
 			msg.channel.sendMessage(msg.author+" is not an adventurer! Use `new adventurer` command!");
-			return;
-		}
-		//already started
-		if(quest[msg.guild.id][msg.author.id]!=undefined){
-			msg.channel.sendMessage("Quest already started! Check it by `quest list` command!");
 			return;
 		}
 		//copy adventurer ID
