@@ -75,7 +75,9 @@ if(fs.existsSync("./quest.txt")){
 		}
 		else if(obj[0]=="quest"){
 			if(quest[obj[1]]==undefined)quest[obj[1]]={};
-			quest[obj[1]][obj[2]]=[obj[3],parseInt(obj[4]),obj[5].replace(/!p/g,"|").replace(/!e/g,"!")];
+			//back compability
+			if(obj[6]==undefined)obj[6]='0';
+			quest[obj[1]][obj[2]]=[obj[3],parseInt(obj[4]),obj[5].replace(/!p/g,"|").replace(/!e/g,"!"),parseInt(obj[6])];
 		}
 		else if(obj[0]=="questDone"){
 			if(questDone[obj[1]]==undefined)questDone[obj[1]]={};
@@ -150,7 +152,9 @@ function createQuestText(){
 	for(x in quest){
 		for(y in quest[x]){
 			if(quest[x][y]==undefined)continue;
-			savetext+="quest|"+x+"|"+y+"|"+quest[x][y][0]+"|"+quest[x][y][1]+"|"+quest[x][y][2].replace(/!/g,"!e").replace(/\|/g,"!p")+"\n";
+			//back compability
+			if(quest[x][y][3]==undefined)quest[x][y][3]=0;
+			savetext+="quest|"+x+"|"+y+"|"+quest[x][y][0]+"|"+quest[x][y][1]+"|"+quest[x][y][2].replace(/!/g,"!e").replace(/\|/g,"!p")+"|"+quest[x][y][3]+"\n";
 			if(questDone[x][y]==undefined)continue;
 			savetext+="questDone|"+x+"|"+y+"|"+questDone[x][y]+"\n";
 		}
@@ -197,8 +201,7 @@ function timeString(millis){
 	return text;
 }
 
-var bully=0;//'215316808331165697';// megu macy
-//145370060402196480 miyuchi
+var bully=0;
 
 client.on("message", msg => {
 	if(msg.author.id==client.user.id)return;
@@ -409,7 +412,7 @@ client.on("message", msg => {
 								questAllDone[msg.guild.id][msg.author.id]++;
 								//check quest complete
 								if(questAllDone[msg.guild.id][msg.author.id]>=questAll[msg.guild.id][1]){
-									//reward & reset quest (quest all reward x10)
+									//reward & reset quest (quest all reward x3)
 									var reward=Math.ceil(Math.random()*adventurer[msg.guild.id][questAll[msg.guild.id][0]].level*questAll[msg.guild.id][1]*3);
 									adventurer[msg.guild.id][msg.author.id].eris+=reward;
 									questAll[msg.guild.id]=undefined;
@@ -587,12 +590,21 @@ client.on("message", msg => {
 			msg.channel.sendMessage("Not enough adventurer! At least 2 is needed");
 			return;
 		}
+		//check cooldown
+		if(quest[msg.guild.id][msg.author.id]!=undefined){
+			//cooldown = 1hr
+			var timePassed=new Date().getTime()-quest[msg.guild.id][msg.author.id][3];
+			if(timePassed<3600000){
+				msg.channel.sendMessage("It's too soon to give up! Try again "+timeString(3600000-timePassed)+" later.");
+				return;
+			}
+		}
 		console.log("quest start");
 		var randomID;
 		//target must not be itself
 		while(randomID==undefined || randomID==msg.author.id)randomID=arrayID[Math.floor(Math.random()*arrayID.length)];
 		//target id, kill needed, flavor
-		quest[msg.guild.id][msg.author.id]=[randomID,Math.ceil(Math.random()*3+1)*5,questFlavor[Math.floor(Math.random()*questFlavor.length)]];
+		quest[msg.guild.id][msg.author.id]=[randomID,Math.ceil(Math.random()*3+1)*5,questFlavor[Math.floor(Math.random()*questFlavor.length)],new Date().getTime()];
 		questDone[msg.guild.id][msg.author.id]=0;
 		msg.channel.sendMessage("Quest started!\nKill "+quest[msg.guild.id][msg.author.id][1]+" "+client.users.get(quest[msg.guild.id][msg.author.id][0]).username+"!\n"+quest[msg.guild.id][msg.author.id][2]);
 		//save
@@ -846,7 +858,7 @@ function getDragon(adv){
 		dragon.eris+=adv[x].eris;
 		length++;
 	}
-	dragon.strength=Math.ceil(dragon.strength/length/2);
+	dragon.strength=Math.ceil(dragon.strength/length/3);
 	dragon.health*=10;
 	dragon.magicpower=Math.ceil(dragon.magicpower/length);
 	dragon.dexterity=Math.ceil(dragon.dexterity/length);
@@ -857,22 +869,7 @@ function getDragon(adv){
 function getCabbage(adv){
 	var cabbage=new Adventurer();
 	var length=0;
-	cabbage.set(0,0,0,0,0,0,0,0);
-	for(x in adv){
-		cabbage.level+=adv[x].level;
-		cabbage.strength+=adv[x].strength;
-		cabbage.health+=adv[x].health;
-		cabbage.magicpower+=adv[x].magicpower;
-		cabbage.dexterity+=adv[x].dexterity;
-		cabbage.agility+=adv[x].agility;
-		cabbage.luck+=adv[x].luck;
-		length++;
-	}
-	cabbage.strength=Math.ceil(cabbage.strength/length/10);
-	cabbage.health=Math.ceil(cabbage.strength/length/10);
-	cabbage.magicpower=Math.ceil(cabbage.magicpower/length/10);
-	cabbage.dexterity=Math.ceil(cabbage.dexterity/length/10);
-	cabbage.agility=Math.ceil(cabbage.agility/length/10);
+	cabbage.set(1,0,10,10,10,10,100,100);
 	return cabbage;
 }
 

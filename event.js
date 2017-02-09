@@ -37,14 +37,20 @@ LiveAdventurer.prototype.attack = function(name1, name2, adv, target, liveTarget
 	var randomizer=Math.random()+0.5;
 	var multiplier=Math.ceil(0.5*adv.dexterity/target.agility);
 	var damage=Math.ceil(adv.strength*multiplier*randomizer);
+	//critical chance ~5% max 10%
+	var criticalChance=adv.luck/(adv.luck+target.luck*19);
+	if(criticalChance>0.1)criticalChance=0.1;
+	//miss chance ~10% max 50%
+	var missChance=target.agility/(adv.dexterity*9+target.agility);
+	if(missChance>0.5)missChance=0.5;
 	//critical
-	if(Math.random()*(adv.luck+target.luck*10)<adv.luck){
+	if(Math.random()<criticalChance){
 		damage*=3;
 		liveTarget.hp-=damage;
 		return name1+" attacked "+name2+". Critical! "+name2+" took "+damage+" damage...";
 	}
 	//miss
-	else if(Math.random()*(this.dexterity*10+target.agility)<target.agility){
+	else if(Math.random()<missChance){
 		return name1+" attacked "+name2+". But missed...";
 	}
 	//normal attack

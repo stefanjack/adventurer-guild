@@ -200,13 +200,19 @@ Adventurer.prototype.attack = function(name1, name2, target){
 	var randomizer=Math.random()+0.5;
 	var multiplier=Math.ceil(0.5*this.dexterity/target.agility);
 	var damage=Math.ceil(this.strength*multiplier*randomizer);
+	//critical chance ~5% max 10%
+	var criticalChance=this.luck/(this.luck+target.luck*19);
+	if(criticalChance>0.1)criticalChance=0.1;
+	//miss chance ~10% max 50%
+	var missChance=target.agility/(this.dexterity*9+target.agility);
+	if(missChance>0.5)missChance=0.5;
 	//critical
-	if(Math.random()*(this.luck+target.luck*10)<this.luck){
+	if(Math.random()<criticalChance){
 		damage*=3;
 		return [name1+" attacked "+name2+". Critical! "+name2+" took "+damage+" damage...",damage];
 	}
 	//miss
-	else if(Math.random()*(this.dexterity*10+target.agility)<target.agility){
+	else if(Math.random()<missChance){
 		return [name1+" attacked "+name2+". But missed...",0];
 	}
 	//normal attack
@@ -218,8 +224,14 @@ Adventurer.prototype.explosion = function(name1, name2, target){
 }
 
 Adventurer.prototype.steal = function(name1, name2, target){
+	//success chance ~50% min 50%
+	var successChance=this.luck/(target.luck+this.luck);
+	if(successChance<0.5)successChance=0.5;
+	//miyuchi safety pantsu
 	if(name2=="Miyuchi")return [name1+" used Steal! But failed...",0];
-	else if(Math.random()*(this.luck+target.luck)<target.luck)return [name1+" used Steal! But failed...",0];
+	//failed
+	else if(Math.random()>successChance)return [name1+" used Steal! But failed...",0];
+	//success
 	else {
 		this.pantsu++;
 		return [name1+" used Steal! "+name1+" got "+name2+"'s pantsu",0];
@@ -234,7 +246,7 @@ Adventurer.prototype.lightofsaber =  function(name1, name2, target){
 	if(this.jobclass()=="Crusader")
 		return [name1+" used Light of Saber... Just kidding... Tee-hee",0];
 	var randomizer=Math.random()+0.5;
-	var multiplier=1.2;
+	var multiplier=2;
 	var damage=Math.ceil(this.magicpower*multiplier*randomizer);
 	return [name1+" used Light of Saber! "+name2+" took "+damage+" damage!",damage];
 }
