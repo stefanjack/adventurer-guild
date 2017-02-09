@@ -171,9 +171,10 @@ Adventurer.prototype.fight = function(name1, name2, enemy){
 var odds={
 attack:100,
 explosion:10,
-steal:50,
+steal:25,
 godblow:50,
-lightofsaber:40
+lightofsaber:40,
+partytrick:25
 };
 
 Adventurer.prototype.combat = function(name1, name2, target){
@@ -189,6 +190,7 @@ Adventurer.prototype.combat = function(name1, name2, target){
 			else if(attack=="steal")return this.steal(name1, name2, target);
 			else if(attack=="godblow")return this.godblow(name1, name2, target);
 			else if(attack=="lightofsaber")return this.lightofsaber(name1, name2, target);
+			else if(attack=="partytrick")return this.partytrick(name1, name2, target);
 		}
 		else skill-=odds[attack];
 	}
@@ -249,6 +251,25 @@ Adventurer.prototype.lightofsaber =  function(name1, name2, target){
 	var multiplier=2;
 	var damage=Math.ceil(this.magicpower*multiplier*randomizer);
 	return [name1+" used Light of Saber! "+name2+" took "+damage+" damage!",damage];
+}
+
+Adventurer.prototype.partytrick = function(name1, name2, target){
+	var targetName="";
+	var moneyLost=0;
+	//backfire 25% max lost 10k
+	if(Math.random()<0.25){
+		targetName=name1;
+		moneyLost=Math.ceil(Math.random()*this.eris);
+		if(moneyLost>10000)moneyLost=10000;
+		this.eris-=moneyLost;
+	}
+	else{
+		targetName=name2;
+		moneyLost=Math.ceil(Math.random()*target.eris);
+		if(moneyLost>10000)moneyLost=10000;
+		target.eris-=moneyLost;
+	}
+	return [name1+" used party tricks! "+targetName+" lost "+moneyLost+" eris...",0];
 }
 
 var Kazuma = new Adventurer();

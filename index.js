@@ -103,6 +103,7 @@ function loadChannel(){
 			//start event
 			eventStatus[obj[0]]=0;
 			var eventTime=Math.ceil(Math.random()*35400000)+600000; //10 mins~10 hrs
+			console.log("event "+timeString(eventTime));
 			setTimeout(function(){openEvent(obj[0]);},eventTime);
 		});
 		console.log("Channel loaded!");
@@ -335,9 +336,10 @@ client.on("message", msg => {
 					adversaries[msg.guild.id][2]--;
 					//cabbage
 					if(event[msg.guild.id][0]==2){
-						adventurer[msg.guild.id][msg.author.id].eris+=100;
+						adventurer[msg.guild.id][msg.author.id].eris+=10000;
 						adventurer[msg.guild.id][msg.author.id].getExp(100);
-						msg.channel.sendMessage("*throws 100 eris at* "+msg.author);
+						adversaries[msg.guild.id][1]=new LiveAdv(adversaries[msg.guild.id][0]);
+						msg.channel.sendMessage("*throws 10,000 eris at* "+msg.author);
 					}
 					if(adversaries[msg.guild.id][2]<=0){
 						clearTimeout(closingEvent[msg.guild.id]);
@@ -718,7 +720,7 @@ client.on("message", msg => {
 	
 	//shop list
 	else if(content=="shop list" && eventStatus[msg.guild.id]==1){
-		msg.channel.sendMessage("To buy use `shop <item number>` command"+
+		msg.channel.sendMessage("To buy use `shop <item number>` command\n"+
 		"```Welcome to Wiz Shop!\n\n"+
 		"1. Potion      (100 eris) Restores HP\n"+
 		"2. Wiz Special (9 pantsu) Permanently increase random stat (limited offer)\n"+
@@ -840,7 +842,7 @@ var eventList=[
 [1,"Announcement: A large **DRAGON** has been seen going near this town. The estimated time of its arrival will be within 20 minutes. All available adventurers, please ready your equipment for battle.","**THE DRAGON IS HERE!!!!!!**","The dragon has been slain... Good job!","The dragon lose interest and left...","Dragon"],
 
 //type 2: swarm
-[2,"I apologize for gathering everyone on such short notice! I think everyone should know the emergency is because of the **CABBAGES**! Each one is worth 100 Eris! They will be ripe within 20 minutes.","It is time to harvest **CABBAGES**! Serve them on plate!","All cabbage have been caught! Fried cabbages is delicious!","The cabbages have flown faraway...","Cabbage"]
+[2,"I apologize for gathering everyone on such short notice! I think everyone should know the emergency is because of the **CABBAGES**! Each one is worth 10,000 Eris! They will be ripe within 20 minutes.","It is time to harvest **CABBAGES**! Serve them on plate!","All cabbage have been caught! Fried cabbages is delicious!","The cabbages have flown faraway...","Cabbage"]
 ];
 
 function getDragon(adv){
@@ -866,10 +868,10 @@ function getDragon(adv){
 	return dragon;
 }
 
-function getCabbage(adv){
+function getCabbage(){
 	var cabbage=new Adventurer();
 	var length=0;
-	cabbage.set(1,0,10,10,10,10,100,100);
+	cabbage.set(1,0,1,1,1,10,10000,10000);
 	return cabbage;
 }
 
@@ -899,7 +901,7 @@ function startEvent(guild){
 		adversaries[guild]=[enemy,new LiveAdv(enemy),1];
 	}
 	else if(event[guild][0]==2){
-		var enemy=getCabbage(adventurer[guild]);
+		var enemy=getCabbage();
 		adversaries[guild]=[enemy,new LiveAdv(enemy),Math.ceil(Math.random()*15)+15];
 		botChannel[guild].sendMessage(adversaries[guild][2]+" cabbages sighted!");
 	}
@@ -914,21 +916,26 @@ function closeEvent(guild,win){
 	if(win){
 		//reward
 		var reward=0;
+		//dragon
 		if(event[guild][0]==1){
 			var length=0;
 			for(x in participator[guild])length++;
-			reward=Math.ceil(adversaries[guild][0].eris/length);
+			//1 mil
+			reward=Math.ceil(1000000/length);
 			for(x in participator[guild]){
 				if(participator[guild][x].hp>0)adventurer[guild][x].eris+=reward;
 			}
 		}
+		//cabbage
 		if(event[guild][0]==2)reward=100;
 		botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][3]+"\n\n"+reward+" eris for everyone participated! (if you are alive that is)");
+		//save
 		saveData();
 	}
 	else botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][4]);
 	
 	var eventTime=Math.ceil(Math.random()*35400000)+600000; //10 mins~10 hrs
+	console.log("event "+timeString(eventTime));
 	setTimeout(function(){openEvent(guild);},eventTime);
 }
 
