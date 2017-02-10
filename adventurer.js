@@ -52,6 +52,7 @@ Adventurer.prototype.stats = function(name){
 	"\nAgility       : "+this.agility+
 	"\nLuck          : "+this.luck+
 	"\n"+
+	"\nReicarnateLv  : "+this.reincarnate+
 	"\n"+this.eris+" eris"+
 	"\n"+this.pantsu+" pantsu(s)"+
 	"\n```";
@@ -254,22 +255,12 @@ Adventurer.prototype.lightofsaber =  function(name1, name2, target){
 }
 
 Adventurer.prototype.partytrick = function(name1, name2, target){
-	var targetName="";
-	var moneyLost=0;
-	//backfire 25% max lost 10k
-	if(Math.random()<0.25){
-		targetName=name1;
-		moneyLost=Math.ceil(Math.random()*this.eris);
-		if(moneyLost>10000)moneyLost=10000;
-		this.eris-=moneyLost;
-	}
+	if(target.eris==0)return [name1+" used party tricks! That was fun...",0];
 	else{
-		targetName=name2;
-		moneyLost=Math.ceil(Math.random()*target.eris);
-		if(moneyLost>10000)moneyLost=10000;
-		target.eris-=moneyLost;
+		target.eris--;
+		this.eris++;
+		return [name1+" used party tricks! "+name2+" donated 1 eris in awe...",0];
 	}
-	return [name1+" used party tricks! "+targetName+" lost "+moneyLost+" eris...",0];
 }
 
 var Kazuma = new Adventurer();
