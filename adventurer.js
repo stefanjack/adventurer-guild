@@ -58,11 +58,15 @@ Adventurer.prototype.stats = function(name){
 	"\n```";
 };
 
+function reincarnationBonus(val){
+	return Math.ceil(Math.sqrt(val/100));
+}
+
 Adventurer.prototype.reincarnation = function(){
 	this.reincarnate+=(this.level-1);
 	this.level = 1;
 	this.experience = 0;
-	var reBonus=Math.ceil(this.reincarnate/100);
+	var reBonus=reincarnationBonus(this.reincarnate);
 	this.strength = Math.floor((Math.random() * 10) + 5+reBonus);
 	this.health = Math.floor((Math.random() * 10) + 5+reBonus);
 	this.magicpower = Math.floor((Math.random() * 10) + 5+reBonus);
@@ -121,7 +125,7 @@ Adventurer.prototype.getExp = function(exp){
 }
 
 Adventurer.prototype.randomGain = function(){
-	var reBonus=Math.ceil(this.reincarnate/100);
+	var reBonus=reincarnationBonus(this.reincarnate);
 	var bonus_type = Math.floor((Math.random() * 6));
 	var bonus_val = Math.ceil(Math.random() * (2+reBonus));
 	if(bonus_type==0)this.strength+=bonus_val;
@@ -134,7 +138,7 @@ Adventurer.prototype.randomGain = function(){
 
 Adventurer.prototype.levelUp = function(){
 	this.level+=1;
-	var reBonus=Math.ceil(this.reincarnate/100);
+	var reBonus=reincarnationBonus(this.reincarnate);
 	this.strength+=Math.floor((Math.random() * (2+reBonus)) + 1);
 	this.health+=Math.floor((Math.random() * (2+reBonus)) + 1);
 	this.magicpower+=Math.floor((Math.random() * (2+reBonus)) + 1);
@@ -201,7 +205,10 @@ Adventurer.prototype.combat = function(name1, name2, target){
 
 Adventurer.prototype.attack = function(name1, name2, target){
 	var randomizer=Math.random()+0.5;
-	var multiplier=Math.ceil(0.5*this.dexterity/target.agility);
+	var multiplier=Math.ceil(this.dexterity/target.agility);
+	//limit multiplier 0.5~1.5
+	if(multiplier>1.5)multiplier=1.5;
+	else if(multiplier<0.5)multiplier=0.5;
 	var damage=Math.ceil(this.strength*multiplier*randomizer);
 	//critical chance ~5% max 10%
 	var criticalChance=this.luck/(this.luck+target.luck*19);

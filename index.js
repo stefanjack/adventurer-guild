@@ -922,12 +922,12 @@ function closeEvent(guild,win){
 			for(x in participator[guild])length++;
 			//1 mil
 			reward=Math.ceil(1000000/length);
-			for(x in participator[guild]){
-				if(participator[guild][x].hp>0)adventurer[guild][x].eris+=reward;
-			}
 		}
 		//cabbage
 		if(event[guild][0]==2)reward=100;
+		for(x in participator[guild]){
+			if(participator[guild][x].hp>0 && participator[guild][x].participate)adventurer[guild][x].eris+=reward;
+		}
 		botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][3]+"\n\n"+reward+" eris for everyone participated! (if you are alive that is)");
 		//save
 		saveData();

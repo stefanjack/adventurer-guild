@@ -3,19 +3,24 @@ var Adventurer=require("./adventurer.js");
 function LiveAdventurer(adv){
 	this.hp = adv.health;
 	this.potion=0;
+	this.participate=false;
 }
 
 LiveAdventurer.prototype.stat = function(adv){
+	if(this.hp>adv.health)this.hp=adv.health;
 	if(this.hp<=0)return "DEAD";
 	else return "HP: "+this.hp+" / "+adv.health+" ("+this.potion+" potions)";
 }
 
 LiveAdventurer.prototype.hpInfo = function(adv){
+	if(this.hp>adv.health)this.hp=adv.health;
 	if(this.hp<=0)return "DEAD";
 	else return "HP: "+this.hp+" / "+adv.health;
 }
 
 LiveAdventurer.prototype.combat = function(name1, name2, adv, target, liveTarget){
+	if(this.hp>adv.health)this.hp=adv.health;
+	this.participate=true;
 	var battleLog="";
 	var move=Math.floor(Math.random()*2);
 	var result;
@@ -35,7 +40,10 @@ LiveAdventurer.prototype.combat = function(name1, name2, adv, target, liveTarget
 
 LiveAdventurer.prototype.attack = function(name1, name2, adv, target, liveTarget){
 	var randomizer=Math.random()+0.5;
-	var multiplier=Math.ceil(0.5*adv.dexterity/target.agility);
+	var multiplier=Math.ceil(adv.dexterity/target.agility);
+	//limit multiplier 0.5~1.5
+	if(multiplier>1.5)multiplier=1.5;
+	else if(multiplier<0.5)multiplier=0.5;
 	var damage=Math.ceil(adv.strength*multiplier*randomizer);
 	//critical chance ~5% max 10%
 	var criticalChance=adv.luck/(adv.luck+target.luck*19);
