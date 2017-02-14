@@ -203,6 +203,7 @@ function timeString(millis){
 }
 
 var bully=0;
+var owner="206099144346042369";
 
 client.on("message", msg => {
 	if(msg.author.id==client.user.id)return;
@@ -211,9 +212,9 @@ client.on("message", msg => {
 	//bully people
 	if(bully!=0){if(msg.author.id==bully)msg.channel.sendMessage("fuck you");}
 	//admin toogle bully
-	if(msg.author.id=='206099144346042369' && content.startsWith(".bully <@"))bully=msg.mentions.users.firstKey();
-	else if(msg.author.id=='206099144346042369' && content.startsWith(".bully "))bully=content.substr(7);
-	if(msg.author.id=='206099144346042369' && content.startsWith(".stop"))bully=0;
+	if(msg.author.id==owner && content.startsWith(".bully <@"))bully=msg.mentions.users.firstKey();
+	else if(msg.author.id==owner && content.startsWith(".bully "))bully=content.substr(7);
+	if(msg.author.id==owner && content.startsWith(".stop"))bully=0;
 	
 	//new server
 	if(adventurer[msg.guild.id]==undefined)adventurer[msg.guild.id]={};
@@ -222,52 +223,34 @@ client.on("message", msg => {
 	if(questAllDone[msg.guild.id]==undefined)questAllDone[msg.guild.id]={};
 	if(questDone[msg.guild.id]==undefined)questDone[msg.guild.id]={};
 	
-	//admin get data
-	if(content.startsWith("<@"+client.user.id+"> data")){
-		if(msg.author.id=="206099144346042369")msg.author.sendMessage(
-		"adventurer\n```\n"+createSaveText()+"```\n"+
-		"quest\n```\n"+createQuestText()+"```\n"+
-		"channel\n```\n"+createChannelText()+"```\n");
-	}
-	
-	//admin reincarnate all (wipe)
-	if(content.startsWith("<@"+client.user.id+"> reincarnate all")){
-		if(msg.author.id=="206099144346042369"){
-			for(x in adventurer[msg.guild.id])adventurer[msg.guild.id][x].reincarnation();
-			msg.channel.sendMessage("Everyone has been reincarnated...");
-			//save
-			saveData();
+	//mention bot
+	if(content.startsWith("<@"+client.user.id+">") || content.startsWith("<@!"+client.user.id+">")){
+		var cmd=content.substr(content.indexOf(">")+2);
+		//set channel
+		if(cmd.startsWith("here")){
+			botChannel[msg.guild.id]=msg.channel;
+			if(eventStatus[msg.guild.id]==undefined){
+				eventStatus[msg.guild.id]=0;
+				var eventTime=Math.ceil(Math.random()*35400000)+600000; //10 mins~10 hrs
+				setTimeout(function(){openEvent(msg.guild.id);},eventTime);
+			}
+			msg.channel.sendMessage("Roger");
+			saveChannel();
 			return;
 		}
-	}
-	
-	//set bot channel for event
-	if(content.startsWith("<@"+client.user.id+"> here")){
-		botChannel[msg.guild.id]=msg.channel;
-		if(eventStatus[msg.guild.id]==undefined){
-			eventStatus[msg.guild.id]=0;
-			var eventTime=Math.ceil(Math.random()*35400000)+600000; //10 mins~10 hrs
-			setTimeout(function(){openEvent(msg.guild.id);},eventTime);
-		}
-		msg.channel.sendMessage("Roger");
-		saveChannel();
-		return;
-	}
-	
-	//play games
-	if(content.startsWith("<@"+client.user.id+"> play ")){
-		if(msg.author.id=="206099144346042369"){
-			var game=content.substr(("<@"+client.user.id+"> play ").length);
-			if(game.length>0){
-				console.log("playing "+game);
-				client.user.setGame(game);
-				return;
+		//owner command
+		if(msg.author.id==owner){
+			//play games
+			if(cmd.startsWith("play ")){
+				var game=content.substr(("<@"+client.user.id+"> play ").length);
+				if(game.length>0){
+					console.log("playing "+game);
+					client.user.setGame(game);
+					return;
+				}
 			}
 		}
-	}
-	
-	//help
-	if(content.startsWith("<@"+client.user.id+">")){
+		//help
 		msg.channel.sendMessage("```Commands:\n\n"+
 		"new adventurer   register as adventurer\n"+
 		"adventurer stat  check your stats\n"+
@@ -1023,7 +1006,7 @@ function closeEvent(guild,win){
 
 client.on('ready', () => {
 	console.log('TO BATTLE!');
-	if(client.user.presence.game==undefined)client.user.setGame("with adult's toy");
+	client.user.setGame("with adult's toy");
 	loadChannel();
 });
 
