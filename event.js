@@ -89,4 +89,8 @@ LiveAdventurer.prototype.usePotion = function(target, liveTarget){
 	} else return " you don't have any potion!";
 }
 
+LiveAdventurer.prototype.revive = function(adv){
+	this.hp = adv.health;
+}
+
 module.exports=LiveAdventurer;

@@ -42,8 +42,14 @@ Adventurer.prototype.set = function(level, experience, strength, health, magicpo
 	if(isNaN(eris))this.eris = 0;
 }
 
+Adventurer.prototype.showExp = function(){
+	var previous=this.level*(this.level-1);
+	return Math.floor((this.experience-previous)*100/(this.level*2));
+}
+
 Adventurer.prototype.stats = function(name){
     return "```\n"+name+" Lv "+this.level+
+	"\nNext Lv: "+this.showExp()+"%"+
 	"\n"+this.jobclass()+"\n"+
 	"\nStrength      : "+this.strength+
 	"\nHealth        : "+this.health+
@@ -59,7 +65,7 @@ Adventurer.prototype.stats = function(name){
 };
 
 function reincarnationBonus(val){
-	return Math.ceil(Math.sqrt(val/100));
+	return Math.ceil(Math.sqrt(val/10));
 }
 
 Adventurer.prototype.reincarnation = function(){

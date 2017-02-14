@@ -254,6 +254,18 @@ client.on("message", msg => {
 		return;
 	}
 	
+	//play games
+	if(content.startsWith("<@"+client.user.id+"> play ")){
+		if(msg.author.id=="206099144346042369"){
+			var game=content.substr(("<@"+client.user.id+"> play ").length);
+			if(game.length>0){
+				console.log("playing "+game);
+				client.user.setGame(game);
+				return;
+			}
+		}
+	}
+	
 	//help
 	if(content.startsWith("<@"+client.user.id+">")){
 		msg.channel.sendMessage("```Commands:\n\n"+
@@ -340,6 +352,11 @@ client.on("message", msg => {
 						adventurer[msg.guild.id][msg.author.id].getExp(100);
 						adversaries[msg.guild.id][1]=new LiveAdv(adversaries[msg.guild.id][0]);
 						msg.channel.sendMessage("*throws 10,000 eris at* "+msg.author);
+					}
+					//cicada
+					if(event[msg.guild.id][0]==3){
+						adventurer[msg.guild.id][msg.author.id].getExp(200);
+						adversaries[msg.guild.id][1]=new LiveAdv(adversaries[msg.guild.id][0]);
 					}
 					if(adversaries[msg.guild.id][2]<=0){
 						clearTimeout(closingEvent[msg.guild.id]);
@@ -738,14 +755,15 @@ client.on("message", msg => {
 		if(number=="1"){
 			//potion
 			//check eris
-			if(adventurer[msg.guild.id][msg.author.id].eris<100){
+			var price=100;
+			if(adventurer[msg.guild.id][msg.author.id].eris<price){
 				msg.channel.sendMessage(msg.author+" short on money? Go home!");
 				return;
 			}
 			if(participator[msg.guild.id][msg.author.id]==undefined){
 				participator[msg.guild.id][msg.author.id]=new LiveAdv(adventurer[msg.guild.id][msg.author.id]);
 			}
-			adventurer[msg.guild.id][msg.author.id].eris-=100;
+			adventurer[msg.guild.id][msg.author.id].eris-=price;
 			participator[msg.guild.id][msg.author.id].potion++;
 			msg.channel.sendMessage(msg.author+" bought potion!");
 			//save
@@ -754,11 +772,12 @@ client.on("message", msg => {
 		else if(number=="2"){
 			//Wiz Special
 			//check pantsu
-			if(adventurer[msg.guild.id][msg.author.id].pantsu<9){
+			var price=9;
+			if(adventurer[msg.guild.id][msg.author.id].pantsu<price){
 				msg.channel.sendMessage(msg.author+" short on pantsu? ¯\\\_(ツ)\_/¯");
 				return;
 			}
-			adventurer[msg.guild.id][msg.author.id].pantsu-=9;
+			adventurer[msg.guild.id][msg.author.id].pantsu-=price;
 			adventurer[msg.guild.id][msg.author.id].randomGain();
 			msg.channel.sendMessage(msg.author+" bought Wiz Special... He feels kinda stronger");
 			//save
@@ -772,6 +791,7 @@ client.on("message", msg => {
 		"fight event  fight the boss\n"+
 		"check party  see party's HP\n"+
 		"use potion   use your potion on someone\n"+
+		"revive       revive comrades for 10,000 eris (not self)\n"+
 		"```");
 	}
 	
@@ -814,10 +834,57 @@ client.on("message", msg => {
 		else if(adventurer[msg.guild.id][msg.author.id]!=undefined){
 			var result=participator[msg.guild.id][msg.author.id].usePotion(adventurer[msg.guild.id][msg.author.id],participator[msg.guild.id][msg.author.id]);
 			if(result.indexOf("dead")<0 && result.indexOf("any"))
-				msg.channel.sendMessage(msg.author+result+"```"+msg.author.username+"\n"+participator[msg.guild.id][msg.author.id].stat(adventurer[msg.guild.id][msg.author.id])+"```");
+				msg.channel.sendMessage(msg.author+result+"\n```"+msg.author.username+"\n"+participator[msg.guild.id][msg.author.id].stat(adventurer[msg.guild.id][msg.author.id])+"```");
 			else msg.channel.sendMessage(msg.author+result);
 		}
 	}
+	
+	//revive
+	else if(content.startsWith("revive ") && eventStatus[msg.guild.id]==2){
+		//check is adventurer
+		if(adventurer[msg.guild.id][msg.author.id]==undefined){
+			msg.channel.sendMessage(msg.author+" is not an adventurer! Use `new adventurer` command!");
+			return;
+		}
+		if(participator[msg.guild.id][msg.author.id]==undefined){
+			participator[msg.guild.id][msg.author.id]=new LiveAdv(adventurer[msg.guild.id][msg.author.id]);
+		}
+		//check target
+		if(msg.mentions.users.array().length>0) {
+			var mentionID=msg.mentions.users.firstKey();
+			var mentionUser=client.users.get(mentionID);
+			//check mentioned is not adventurer
+			if(adventurer[msg.guild.id][mentionID]!=undefined){
+				if(participator[msg.guild.id][mentionID]==undefined){
+					participator[msg.guild.id][mentionID]=new LiveAdv(adventurer[msg.guild.id][mentionID]);
+				}
+				//check target dead
+				if(participator[msg.guild.id][mentionID].hp>0){
+					msg.channel.sendMessage(mentionUser+" is not dead yet, baka!");
+					return;
+				}
+				//check mentioned is yourself
+				if(mentionID==msg.author.id){
+					msg.channel.sendMessage(msg.author+" you are now a corpse. So stay still.");
+				}
+				//check money
+				var price=10000;
+				if(adventurer[msg.guild.id][msg.author.id].eris<price){
+					msg.channel.sendMessage(msg.author+" Aqua doesn't feel you have enough ~~money~~ faith");
+					return;
+				}
+				adventurer[msg.guild.id][msg.author.id].eris-=price;
+				participator[msg.guild.id][mentionID].revive(adventurer[msg.guild.id][mentionID]);
+				msg.channel.sendMessage(msg.author+" called Aqua to revive "+mentionUser+"\nThank you for your patronage\n```"+mentionUser.username+"\n"+participator[msg.guild.id][mentionID].stat(adventurer[msg.guild.id][mentionID])+"```");
+			}
+			else msg.channel.sendMessage(mentionUser+" is not an adventurer!");
+		}
+		//usage
+		else {
+			msg.channel.sendMessage("```Usage:\nrevive <mention>```");
+		}
+	}
+	
 });
 
 var questFlavor=[
@@ -842,7 +909,10 @@ var eventList=[
 [1,"Announcement: A large **DRAGON** has been seen going near this town. The estimated time of its arrival will be within 20 minutes. All available adventurers, please ready your equipment for battle.","**THE DRAGON IS HERE!!!!!!**","The dragon has been slain... Good job!","The dragon lose interest and left...","Dragon"],
 
 //type 2: swarm
-[2,"I apologize for gathering everyone on such short notice! I think everyone should know the emergency is because of the **CABBAGES**! Each one is worth 10,000 Eris! They will be ripe within 20 minutes.","It is time to harvest **CABBAGES**! Serve them on plate!","All cabbage have been caught! Fried cabbages is delicious!","The cabbages have flown faraway...","Cabbage"]
+[2,"I apologize for gathering everyone on such short notice! I think everyone should know the emergency is because of the **CABBAGES**! Each one is worth 10,000 Eris! They will be ripe within 20 minutes.","It is time to harvest **CABBAGES**! Serve them on plate!","All cabbage have been caught! Fried cabbages is delicious!","The cabbages have flown faraway...","Cabbage"],
+
+//type 2: cicada
+[3,"There are a lot of **CICADAS** in the forest! Because of the large quantity, we need a lot of people. We will start in 20 minutes!","It is time to hunt the **CICADAS**!","Cicadas exterminated! You arrogant and greedy humans.","And thus, cicadas continue to pee while flying about...","Cicada"]
 ];
 
 function getDragon(adv){
@@ -870,9 +940,14 @@ function getDragon(adv){
 
 function getCabbage(){
 	var cabbage=new Adventurer();
-	var length=0;
 	cabbage.set(1,0,1,1,1,10,10000,10000);
 	return cabbage;
+}
+
+function getCicada(){
+	var cicada=new Adventurer();
+	cicada.set(50,0,100,100,100,100,100,1);
+	return cicada;
 }
 
 var closingEvent={};
@@ -905,6 +980,11 @@ function startEvent(guild){
 		adversaries[guild]=[enemy,new LiveAdv(enemy),Math.ceil(Math.random()*15)+15];
 		botChannel[guild].sendMessage(adversaries[guild][2]+" cabbages sighted!");
 	}
+	else if(event[guild][0]==3){
+		var enemy=getCicada();
+		adversaries[guild]=[enemy,new LiveAdv(enemy),Math.ceil(Math.random()*30)+20];
+		botChannel[guild].sendMessage(adversaries[guild][2]+" cicadas sighted!");
+	}
 	
 	var eventTime=3600000; //duration 1 hrs
 	closingEvent[guild]=setTimeout(function(){closeEvent(guild,false);},eventTime);
@@ -924,11 +1004,13 @@ function closeEvent(guild,win){
 			reward=Math.ceil(1000000/length);
 		}
 		//cabbage
-		if(event[guild][0]==2)reward=100;
+		else if(event[guild][0]==2)reward=100;
+		//cicada
+		else if(event[guild][0]==3)reward=10000;
 		for(x in participator[guild]){
 			if(participator[guild][x].hp>0 && participator[guild][x].participate)adventurer[guild][x].eris+=reward;
 		}
-		botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][3]+"\n\n"+reward+" eris for everyone participated! (if you are alive that is)");
+		botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][3]+"\n\n"+reward+" eris for everyone participated! (if you are alive)");
 		//save
 		saveData();
 	}
@@ -941,6 +1023,7 @@ function closeEvent(guild,win){
 
 client.on('ready', () => {
 	console.log('TO BATTLE!');
+	if(client.user.presence.game==undefined)client.user.setGame("with adult's toy");
 	loadChannel();
 });
 
