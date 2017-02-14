@@ -44,7 +44,9 @@ Adventurer.prototype.set = function(level, experience, strength, health, magicpo
 
 Adventurer.prototype.showExp = function(){
 	var previous=this.level*(this.level-1);
-	return Math.floor((this.experience-previous)*100/(this.level*2));
+	var exp=Math.floor((this.experience-previous)*100/(this.level*2));
+	if(exp<0)exp=0;
+	return exp;
 }
 
 Adventurer.prototype.stats = function(name){
