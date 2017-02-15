@@ -849,6 +849,7 @@ client.on("message", msg => {
 				//check mentioned is yourself
 				if(mentionID==msg.author.id){
 					msg.channel.sendMessage(msg.author+" you are now a corpse. So stay still.");
+					return;
 				}
 				//check money
 				var price=10000;
@@ -929,7 +930,7 @@ function getCabbage(){
 
 function getCicada(){
 	var cicada=new Adventurer();
-	cicada.set(50,0,100,100,100,100,100,1);
+	cicada.set(50,0,100,10000,100,100,100,1);
 	return cicada;
 }
 
