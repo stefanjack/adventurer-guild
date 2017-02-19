@@ -90,6 +90,16 @@ else console.log("Quest data not found!");
 
 var channelLoaded=false;
 
+function checkChannel(guild){
+	if(client.channels.has(botChannel[guild].id))
+		return true;
+	else{
+		delete botChannel[guild];
+		saveChannel();
+		return false;
+	}
+}
+
 function loadChannel(){
 	if(channelLoaded)return;
 	if(fs.existsSync("./channel.txt")){
@@ -203,6 +213,7 @@ function timeString(millis){
 }
 
 var bully=0;
+var word="fuck you";
 var owner="206099144346042369";
 
 client.on("message", msg => {
@@ -210,11 +221,39 @@ client.on("message", msg => {
 	var content=msg.content.toLowerCase();
 	
 	//bully people
-	if(bully!=0){if(msg.author.id==bully)msg.channel.sendMessage("fuck you");}
-	//admin toogle bully
-	if(msg.author.id==owner && content.startsWith(".bully <@"))bully=msg.mentions.users.firstKey();
-	else if(msg.author.id==owner && content.startsWith(".bully "))bully=content.substr(7);
-	if(msg.author.id==owner && content.startsWith(".stop"))bully=0;
+	if(bully!=0){
+		if(msg.author.id==bully){
+			msg.channel.sendMessage(word);
+		}
+	}
+	//admin target bully
+	if(msg.author.id==owner && content.startsWith(".bully <@")){
+		bully=msg.mentions.users.firstKey();
+		msg.channel.sendMessage("O7");
+		return;
+	}
+	else if(msg.author.id==owner && content.startsWith(".bully ")){
+		bully=content.substr(7);
+		msg.channel.sendMessage("O7");
+		return;
+	}
+	//stop bully
+	if(msg.author.id==owner && content.startsWith(".stop")){
+		bully=0;
+		msg.channel.sendMessage("O7");
+		return;
+	}
+	//set bully word
+	if(msg.author.id==owner && content.startsWith(".word ")){
+		word=msg.content.substr(6);
+		msg.channel.sendMessage("O7");
+		return;
+	}
+	//repeat message
+	if(msg.author.id==owner && content.startsWith(".say ")){
+		msg.channel.sendMessage(msg.content.substr(5));
+		return;
+	}
 	
 	//new server
 	if(adventurer[msg.guild.id]==undefined)adventurer[msg.guild.id]={};
@@ -242,7 +281,7 @@ client.on("message", msg => {
 		if(msg.author.id==owner){
 			//play games
 			if(cmd.startsWith("play ")){
-				var game=content.substr(("<@"+client.user.id+"> play ").length);
+				game=msg.content.substr(("<@"+client.user.id+"> play ").length);
 				if(game.length>0){
 					console.log("playing "+game);
 					client.user.setGame(game);
@@ -930,7 +969,7 @@ function getCabbage(){
 
 function getCicada(){
 	var cicada=new Adventurer();
-	cicada.set(50,0,100,10000,100,100,100,1);
+	cicada.set(50,0,100,1000,100,100,100,1);
 	return cicada;
 }
 
@@ -939,6 +978,7 @@ var participator={};
 var adversaries={};
 
 function openEvent(guild){
+	if(!checkChannel(guild))return;
 	console.log("open event");
 	eventStatus[guild]=1;
 	participator[guild]={};
@@ -951,6 +991,7 @@ function openEvent(guild){
 }
 
 function startEvent(guild){
+	if(!checkChannel(guild))return;
 	console.log("start event");
 	eventStatus[guild]=2;
 	botChannel[guild].sendMessage("`Raid Event` @here\n"+event[guild][2]+"\nEveryone have evacuated, so equipment shop has closed!\nUse `command list` command to see what you can do!");
@@ -975,6 +1016,7 @@ function startEvent(guild){
 }
 
 function closeEvent(guild,win){
+	if(!checkChannel(guild))return;
 	console.log("close event");
 	eventStatus[guild]=0;
 	if(win){
@@ -1005,9 +1047,11 @@ function closeEvent(guild,win){
 	setTimeout(function(){openEvent(guild);},eventTime);
 }
 
+var game="with adult's toy";
+
 client.on('ready', () => {
 	console.log('TO BATTLE!');
-	client.user.setGame("with adult's toy");
+	client.user.setGame(game);
 	loadChannel();
 });
 
