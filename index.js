@@ -254,6 +254,12 @@ client.on("message", msg => {
 		msg.channel.sendMessage(msg.content.substr(5));
 		return;
 	}
+	//set nickname
+	if(msg.author.id==owner && content.startsWith(".nick ")){
+		msg.guild.members.get(client.user.id).setNickname(msg.content.substr(6));
+		msg.channel.sendMessage("O7");
+		return;
+	}
 	
 	//new server
 	if(adventurer[msg.guild.id]==undefined)adventurer[msg.guild.id]={};
@@ -377,7 +383,8 @@ client.on("message", msg => {
 					}
 					//cicada
 					if(event[msg.guild.id][0]==3){
-						adventurer[msg.guild.id][msg.author.id].getExp(200);
+						adventurer[msg.guild.id][msg.author.id].getExp(adversaries[msg.guild.id][0].level);
+						adversaries[msg.guild.id][0]=adversaries[msg.guild.id][0].addStat(getCicada());
 						adversaries[msg.guild.id][1]=new LiveAdv(adversaries[msg.guild.id][0]);
 					}
 					if(adversaries[msg.guild.id][2]<=0){
@@ -425,7 +432,7 @@ client.on("message", msg => {
 				//check enemy is this bot
 				if(enemyID==client.user.id){
 					msg.channel.sendMessage(msg.author+" thou hath challengeth me, now feel my wrath!");
-					var shadow=adventurer[msg.guild.id][msg.author.id].getShadow(10);
+					var shadow=adventurer[msg.guild.id][msg.author.id].getShadow(3);
 					var battleLog=adventurer[msg.guild.id][msg.author.id].fight(msg.author.username,client.user.username,shadow);
 					msg.channel.sendMessage("```"+battleLog+"```");
 					fightCooldown[msg.guild.id][msg.author.id]=[new Date().getTime(),Math.ceil(Math.random()*50+10)];
@@ -1007,7 +1014,7 @@ function startEvent(guild){
 	}
 	else if(event[guild][0]==3){
 		var enemy=getCicada();
-		adversaries[guild]=[enemy,new LiveAdv(enemy),Math.ceil(Math.random()*30)+20];
+		adversaries[guild]=[enemy,new LiveAdv(enemy),Math.ceil(Math.random()*15)+15];
 		botChannel[guild].sendMessage(adversaries[guild][2]+" cicadas sighted!");
 	}
 	
@@ -1032,7 +1039,7 @@ function closeEvent(guild,win){
 		//cabbage
 		else if(event[guild][0]==2)reward=100;
 		//cicada
-		else if(event[guild][0]==3)reward=10000;
+		else if(event[guild][0]==3)reward=200*adversaries[guild][0].level;
 		for(x in participator[guild]){
 			if(participator[guild][x].hp>0 && participator[guild][x].participate)adventurer[guild][x].eris+=reward;
 		}

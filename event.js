@@ -40,11 +40,12 @@ LiveAdventurer.prototype.combat = function(name1, name2, adv, target, liveTarget
 
 LiveAdventurer.prototype.attack = function(name1, name2, adv, target, liveTarget){
 	var randomizer=Math.random()+0.5;
-	var multiplier=Math.ceil(adv.dexterity/target.agility);
+	var multiplier=adv.level/target.level;
 	//limit multiplier 0.5~1.5
 	if(multiplier>1.5)multiplier=1.5;
 	else if(multiplier<0.5)multiplier=0.5;
-	var damage=Math.ceil(adv.strength*multiplier*randomizer);
+	var power=1;
+	var damage=Math.ceil(adv.strength*multiplier*randomizer*power);
 	//critical chance ~5% max 10%
 	var criticalChance=adv.luck/(adv.luck+target.luck*19);
 	if(criticalChance>0.1)criticalChance=0.1;
@@ -70,8 +71,12 @@ LiveAdventurer.prototype.attack = function(name1, name2, adv, target, liveTarget
 
 LiveAdventurer.prototype.magic = function(name1, name2, adv, target, liveTarget){
 	var randomizer=Math.random()+0.5;
-	var multiplier=1;
-	var damage=Math.ceil(adv.magicpower*multiplier*randomizer);
+	var multiplier=adv.level/target.level;
+	//limit multiplier 0.5~1.5
+	if(multiplier>1.5)multiplier=1.5;
+	else if(multiplier<0.5)multiplier=0.5;
+	var power=1;
+	var damage=Math.ceil(adv.magicpower*multiplier*randomizer*power);
 	liveTarget.hp-=damage;
 	return name1+" used a magic! "+name2+" took "+damage+" damage!";
 }

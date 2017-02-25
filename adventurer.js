@@ -43,10 +43,11 @@ Adventurer.prototype.set = function(level, experience, strength, health, magicpo
 }
 
 Adventurer.prototype.showExp = function(){
-	var previous=this.level*(this.level-1);
+	/*var previous=this.level*(this.level-1);
 	var exp=Math.floor((this.experience-previous)*100/(this.level*2));
 	if(exp<0)exp=0;
-	return exp;
+	return exp;*/
+	return Math.floor(this.experience*100/this.nextLv());
 }
 
 Adventurer.prototype.stats = function(name){
@@ -93,12 +94,8 @@ Adventurer.prototype.reincarnation = function(){
 }
 
 Adventurer.prototype.jobclass = function(){
-	if(this.strength>=this.health && this.strength>=this.magicpower && this.strength>=this.dexterity && this.strength>=this.agility && this.strength>=this.luck){
-		if(this.magicpower>=this.health && this.magicpower>=this.dexterity && this.magicpower>=this.agility && this.magicpower>=this.luck)
-			return "Magic Knight";
-		else
-			return "Swordsman";
-	}
+	if(this.strength>=this.health && this.strength>=this.magicpower && this.strength>=this.dexterity && this.strength>=this.agility && this.strength>=this.luck)
+		return "Swordsman";
 	else if(this.health>=this.strength && this.health>=this.magicpower && this.health>=this.dexterity && this.health>=this.agility && this.health>=this.luck){
 		if(this.strength>=this.magicpower && this.strength>=this.dexterity && this.strength>=this.agility && this.strength>=this.luck)
 			return "Arch Priest";
@@ -115,20 +112,63 @@ Adventurer.prototype.jobclass = function(){
 		return "Adventurer";
 }
 
+Adventurer.prototype.randomStatSwap = function(multiplier){
+	var stat1=Math.floor(Math.random()*6);
+	var stat2=Math.floor(Math.random()*6);
+	var str="";
+	//swap
+	var temp=0;
+	if(stat1==0){str="strength"; temp=this.strength;}
+	else if(stat1==1){str="health"; temp=this.health;}
+	else if(stat1==2){str="magicpower"; temp=this.magicpower;}
+	else if(stat1==3){str="dexterity"; temp=this.dexterity;}
+	else if(stat1==4){str="agility"; temp=this.agility;}
+	else if(stat1==5){str="luck"; temp=this.luck;}
+	str+=" swapped with ";
+	var temp2=0;
+	if(stat2==0){str+="strength"; temp2=this.strength; this.strength=temp;}
+	else if(stat2==1){str+="health"; temp2=this.health; this.health=temp;}
+	else if(stat2==2){str+="magic power"; temp2=this.magicpower; this.magicpower=temp;}
+	else if(stat2==3){str+="dexterity"; temp2=this.dexterity; this.dexterity=temp;}
+	else if(stat2==4){str+="agility"; temp2=this.agility; this.agililty=temp;}
+	else if(stat2==5){str+="luck"; temp2=this.luck; this.luck=temp;}
+	if(stat1==0){this.strength=temp2;}
+	else if(stat1==1){this.health=temp2;}
+	else if(stat1==2){this.magicpower=temp2;}
+	else if(stat1==3){this.dexterity=temp2;}
+	else if(stat1==4){this.agility=temp2;}
+	else if(stat1==5){this.luck=temp2;}
+	return str;
+}
+
+Adventurer.prototype.addStat = function(adv){
+	var shadow=new Adventurer();
+	shadow.set(this.level+adv.level,0,this.strength+adv.strength,this.health+adv.health,this.magicpower+adv.magicpower,this.dexterity+adv.dexterity,this.agility+adv.agility,this.luck+adv.luck);
+	return shadow;
+}
+
 Adventurer.prototype.getShadow = function(multiplier){
 	var shadow=new Adventurer();
 	shadow.set(1,0,this.strength*multiplier,this.health*multiplier,this.magicpower*multiplier,this.dexterity*multiplier,this.agility*multiplier,this.luck*multiplier);
 	return shadow;
 }
 
+Adventurer.prototype.nextLv = function(lv){
+	if(lv==undefined)lv=this.level;
+	return lv*(lv+1);
+}
+
 Adventurer.prototype.getExp = function(exp){
 	this.experience+=exp;
 	//check lv up
-	var next=(this.level+1)*this.level;
+	var next=this.nextLv();
 	if(this.experience>=next){
 		this.levelUp();
+		//reset exp
+		var surplus=this.experience-next;
+		this.experience=0;
 		//recheck lv up again
-		this.getExp(0);
+		this.getExp(surplus);
 	}
 }
 
@@ -213,11 +253,12 @@ Adventurer.prototype.combat = function(name1, name2, target){
 
 Adventurer.prototype.attack = function(name1, name2, target){
 	var randomizer=Math.random()+0.5;
-	var multiplier=Math.ceil(this.dexterity/target.agility);
+	var multiplier=this.level/target.level;
 	//limit multiplier 0.5~1.5
 	if(multiplier>1.5)multiplier=1.5;
 	else if(multiplier<0.5)multiplier=0.5;
-	var damage=Math.ceil(this.strength*multiplier*randomizer);
+	var power=1;
+	var damage=Math.ceil(this.strength*multiplier*randomizer*power);
 	//critical chance ~5% max 10%
 	var criticalChance=this.luck/(this.luck+target.luck*19);
 	if(criticalChance>0.1)criticalChance=0.1;
@@ -264,8 +305,12 @@ Adventurer.prototype.lightofsaber =  function(name1, name2, target){
 	if(this.jobclass()=="Crusader")
 		return [name1+" used Light of Saber... Just kidding... Tee-hee",0];
 	var randomizer=Math.random()+0.5;
-	var multiplier=2;
-	var damage=Math.ceil(this.magicpower*multiplier*randomizer);
+	var multiplier=this.level/target.level;
+	//limit multiplier 0.5~1.5
+	if(multiplier>1.5)multiplier=1.5;
+	else if(multiplier<0.5)multiplier=0.5;
+	var power=2;
+	var damage=Math.ceil(this.magicpower*multiplier*randomizer*power);
 	return [name1+" used Light of Saber! "+name2+" took "+damage+" damage!",damage];
 }
 
