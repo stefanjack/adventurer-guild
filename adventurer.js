@@ -155,7 +155,8 @@ Adventurer.prototype.getShadow = function(multiplier){
 
 Adventurer.prototype.nextLv = function(lv){
 	if(lv==undefined)lv=this.level;
-	return lv*(lv+1);
+	//return lv*(lv+1);
+	return lv*2;
 }
 
 Adventurer.prototype.getExp = function(exp){
