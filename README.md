@@ -1,4 +1,6 @@
 # adventurer-guild
-Discord Bot using discord.js
+zDiscord Bot using discord.js
 
 PvP Game (inspired by konosuba) + other features
+
+(will not up to date until further notice)
