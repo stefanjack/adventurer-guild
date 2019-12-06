@@ -1,9 +1,14 @@
-var Adventurer=require("./adventurer.js");
+var Adventurer=require("./adventurer.js");//redundant?
+var Ailments=require("./ailments.js");
+var Skills=require("./skill.js");
 
 function LiveAdventurer(adv){
 	this.hp = adv.health;
 	this.potion=0;
 	this.participate=false;
+	this.mana=adv.magicpower;
+	this.crystal=0;
+	this.ailment=new Ailments();
 }
 
 LiveAdventurer.prototype.stat = function(adv){
@@ -22,22 +27,56 @@ LiveAdventurer.prototype.combat = function(name1, name2, adv, target, liveTarget
 	if(this.hp>adv.health)this.hp=adv.health;
 	this.participate=true;
 	var battleLog="";
-	var move=Math.floor(Math.random()*2);
 	var result;
-	if(move==0)result=this.attack(name1, name2, adv,target,liveTarget);
-	else if(move==1)result=this.magic(name1, name2, adv,target,liveTarget);
-	battleLog+=result;
+	if(!this.ailment.stunned()){
+		//result=this.attack(name1, name2, adv,target,liveTarget);
+		result=Skills['attack'](name1, name2, adv, target, this.ailment, liveTarget.ailment);
+		result=['attack'].concat(result);
+		battleLog+=result[1]+"\n";
+		//buff
+		if(liveTarget.ailment.defense>0 && isPhysical(result[0]))
+			result[2]=Math.ceil(result[2]*(1-liveTarget.ailment.defense));
+		if(liveTarget.ailment.magicresistance>0 && isMagic(result[0]))
+			result[2]=Math.ceil(result[2]*(1-liveTarget.ailment.magicresistance));
+		//damage
+		liveTarget.hp-=result[2];
+		//heal
+		if(result[3]!=undefined){
+			this.hp+=result[3];
+			if(this.hp>adv.health)hp1=adv.health;
+		}
+	}
+	else battleLog=name1+" cannot move!";
+	
 	//check dead
 	if(liveTarget.hp<=0)return battleLog;
-	//counter
-	move=Math.floor(Math.random()*2);
-	if(move==0)result=liveTarget.attack(name2, name1, target,adv,this);
-	else if(move==1)result=this.magic(name2, name1, target,adv,this);
-	battleLog+="\n"+result;
 	
+	//counter
+	if(!liveTarget.ailment.stunned()){
+		//result=liveTarget.attack(name2, name1, target,adv,this);
+		result=Skills['attack'](name2, name1, target, adv, liveTarget.ailment, this.ailment);
+		result=['attack'].concat(result);
+		battleLog+=result[1]+"\n";
+		//buff
+		if(this.ailment.defense>0 && isPhysical(result[0]))
+			result[2]=Math.ceil(result[2]*(1-this.ailment.defense));
+		if(this.ailment.magicresistance>0 && isMagic(result[0]))
+			result[2]=Math.ceil(result[2]*(1-this.ailment.magicresistance));
+		//damage
+		this.hp-=result[2];
+		//heal
+		if(result[3]!=undefined){
+			liveTarget.hp+=result[3];
+			if(liveTarget.hp>target.health)liveTarget.hp=target.health;
+		}
+	}
+	else battleLog=name2+" cannot move!";
 	return battleLog+"\n\n"+this.stat(adv);
 }
 
+//mana cost
+
+/*
 LiveAdventurer.prototype.attack = function(name1, name2, adv, target, liveTarget){
 	var randomizer=Math.random()+0.5;
 	var multiplier=adv.level/target.level;
@@ -80,7 +119,7 @@ LiveAdventurer.prototype.magic = function(name1, name2, adv, target, liveTarget)
 	liveTarget.hp-=damage;
 	return name1+" used a magic! "+name2+" took "+damage+" damage!";
 }
-
+*/
 LiveAdventurer.prototype.usePotion = function(target, liveTarget){
 	//check dead
 	if(this.hp<0)return " you are dead!";

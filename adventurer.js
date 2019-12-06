@@ -1,3 +1,6 @@
+var Ailments=require("./ailments.js");
+var Skills=require("./skill.js");
+
 function Adventurer(){
 	this.level = 1;
 	this.experience = 0;
@@ -185,7 +188,43 @@ Adventurer.prototype.randomGain = function(){
 	else if(bonus_type==5)this.luck+=bonus_val;
 }
 
+Adventurer.prototype.keepClass = function(original){
+	if(original=="Swordsman"){
+		while(original!=this.jobclass())
+			this.strength++;
+	}
+	else if(original=="Arch Priest" || original=="Crusader"){
+		while(this.jobclass()!="Arch Priest" && this.jobclass()!="Crusader")
+			this.health++;
+		if(original=="Arch Priest"){
+			while(original!=this.jobclass())
+				this.strength++;
+		}
+		else{
+			while(original!=this.jobclass())
+				this.strength--;
+		}
+	}
+	else if(original=="Arch Wizard"){
+		while(original!=this.jobclass())
+			this.magicpower++;
+	}
+	else if(original=="Archer"){
+		while(original!=this.jobclass())
+			this.dexterity++;
+	}
+	else if(original=="Thief"){
+		while(original!=this.jobclass())
+			this.agility++;
+	}
+	else if(original=="Adventurer"){
+		while(original!=this.jobclass())
+			this.luck++;
+	}
+}
+
 Adventurer.prototype.levelUp = function(){
+	var currentClass=this.jobclass();
 	this.level+=1;
 	var reBonus=reincarnationBonus(this.reincarnate);
 	this.strength+=Math.floor((Math.random() * (2+reBonus)) + 1);
@@ -194,6 +233,32 @@ Adventurer.prototype.levelUp = function(){
 	this.dexterity+=Math.floor((Math.random() * (2+reBonus)) + 1);
 	this.agility+=Math.floor((Math.random() * (2+reBonus)) + 1);
 	this.luck+=Math.floor((Math.random() * (2+reBonus)) + 1);
+	this.keepClass(currentClass);
+}
+
+Adventurer.prototype.revertBuff = function(ailment){
+	this.strength-=ailment.strength; this.agility-=ailment.speed; this.luck-=ailment.blessing;
+}
+
+var physicalAttack=['attack','exterion','sacredexplode','godblow','snipe'];
+function isPhysical(attack){
+	for(var i=0; i<physicalAttack.length; i++){
+		if(attack==physicalAttack[i]){
+			return true;
+		}
+	}
+	return false;
+}
+
+var magicAttack=['fireball','bladeofwind','lightning','freezegust','energyignition','inferno','crystalprison','lightningstrike','tornado','lightofsaber','tinder','freeze','windbreath'];
+// blast, detonation, explosion is exception (anti-magic resistance)
+function isMagic(attack){
+	for(var i=0; i<magicAttack.length; i++){
+		if(attack==magicAttack[i]){
+			return true;
+		}
+	}
+	return false;
 }
 
 //parameter: this name, enemy name, enemy adventurer
@@ -201,17 +266,50 @@ Adventurer.prototype.fight = function(name1, name2, enemy){
 	var battleLog="";
 	var hp1=this.health;
 	var hp2=enemy.health;
+	var job1=this.jobclass().replace(/ /g,"");
+	var job2=enemy.jobclass().replace(/ /g,"");
+	var ailment1=new Ailments();
+	var ailment2=new Ailments();
 	while(hp1>0 && hp2>0){
-		var result=this.combat(name1, name2, enemy);
-		battleLog+=result[0]+"\n";
-		hp2-=result[1];
-		
+		if(!ailment1.stunned()){
+			var result=this.combat(name1, name2, enemy, ailment1, ailment2, job1);
+			battleLog+=result[1]+"\n";
+			//buff
+			if(ailment2.defense>0 && isPhysical(result[0]))
+				result[2]=Math.ceil(result[2]*(1-ailment2.defense));
+			if(ailment2.magicresistance>0 && isMagic(result[0]))
+				result[2]=Math.ceil(result[2]*(1-ailment2.magicresistance));
+			//damage
+			hp2-=result[2];
+			//heal
+			if(result[3]!=undefined){
+				hp1+=result[3];
+				if(hp1>this.health)hp1=this.health;
+			}
+		}
 		if(hp2<=0)break;
 		
-		result=enemy.combat(name2, name1, this);
-		battleLog+=result[0]+"\n";
-		hp1-=result[1];
+		if(!ailment2.stunned()){
+			result=enemy.combat(name2, name1, this, ailment2, ailment1, job2);
+			battleLog+=result[1]+"\n";
+			//buff
+			if(ailment1.defense>0 && isPhysical(result[0]))
+				result[2]=Math.ceil(result[2]*(1-ailment1.defense));
+			if(ailment1.magicresistance>0 && isMagic(result[0]))
+				result[2]=Math.ceil(result[2]*(1-ailment1.magicresistance));
+			//damage
+			hp1-=result[2];
+			//heal
+			if(result[3]!=undefined){
+				hp2+=result[3];
+				if(hp2>enemy.health)hp2=enemy.health;
+			}
+		}
 	}
+	//revert buff
+	this.revertBuff(ailment1);
+	enemy.revertBuff(ailment2);
+	//declare winner
 	if(hp1>0){
 		battleLog+=name2+" died...\n"+name1+" wins!\n";
 		this.getExp(enemy.level);
@@ -223,104 +321,96 @@ Adventurer.prototype.fight = function(name1, name2, enemy){
 }
 
 var odds={
-attack:100,
-explosion:10,
-steal:25,
-godblow:50,
-lightofsaber:40,
-partytrick:25
+Swordsman:{
+	attack:60,
+	exterion:15,
+	sacredexplode:10,
+	steal:10,
+	explosion:5
+},
+ArchPriest:{
+	attack:20,
+	heal:20,
+	blessing:5,
+	breakspell:5,
+	increasestrength:5,
+	improvespeed:5,
+	enhancedefense:5,
+	enhancemagicresistance:5,
+	godblow:10,
+	partytrick:5,
+	steal:10,
+	explosion:5
+},
+Crusader:{
+	attack:85,
+	steal:10,
+	explosion:5
+},
+ArchWizard:{
+	attack:40,
+	//intermediate
+	fireball:12,
+	bladeofwind:12,
+	lightning:12,
+	freezegust:12,
+	sleep:12,
+	//advanced
+	energyignition:5,
+	inferno:5,
+	crystalprison:5,
+	lightningstrike:5,
+	tornado:5,
+	bottomlessswamp:5,
+	lightofsaber:5,
+	anklesnare:5,
+	//detonate
+	blast:10,
+	detonation:10,
+	steal:20,
+	explosion:20
+},
+Archer:{
+	attack:60,
+	snipe:25,
+	steal:10,
+	explosion:5
+},
+Thief:{
+	attack:50,
+	steal:25,
+	bind:20,
+	explosion:5
+},
+Adventurer:{
+	attack:40,
+	snipe:10,
+	tinder:5,
+	createwater:5,
+	freeze:5,
+	createearth:5,
+	windbreath:5,
+	draintouch:10,
+	steal:10,
+	explosion:5
+}
 };
 
-Adventurer.prototype.combat = function(name1, name2, target){
+Adventurer.prototype.combat = function(name1, name2, target, ailment1, ailment2, job){
 	var chance=0;
-	for(attack in odds){
-		chance+=odds[attack];
+	var skills=odds[job];
+	for(attack in skills){
+		chance+=skills[attack];
 	}
 	var skill=Math.floor((Math.random() * chance));
-	for(attack in odds){
-		if(skill<odds[attack]){
-			if(attack=="attack")return this.attack(name1, name2, target);
-			else if(attack=="explosion")return this.explosion(name1, name2, target);
-			else if(attack=="steal")return this.steal(name1, name2, target);
-			else if(attack=="godblow")return this.godblow(name1, name2, target);
-			else if(attack=="lightofsaber")return this.lightofsaber(name1, name2, target);
-			else if(attack=="partytrick")return this.partytrick(name1, name2, target);
+	for(attack in skills){
+		if(skill<skills[attack]){
+			var return1=[attack];
+			//var return2=this[attack](name1, name2, target, ailment1, ailment2);
+			var return2=Skills[attack](name1, name2, this, target, ailment1, ailment2);
+			return return1.concat(return2);
 		}
-		else skill-=odds[attack];
-	}
-}
-
-//skills
-
-Adventurer.prototype.attack = function(name1, name2, target){
-	var randomizer=Math.random()+0.5;
-	var multiplier=this.level/target.level;
-	//limit multiplier 0.5~1.5
-	if(multiplier>1.5)multiplier=1.5;
-	else if(multiplier<0.5)multiplier=0.5;
-	var power=1;
-	var damage=Math.ceil(this.strength*multiplier*randomizer*power);
-	//critical chance ~5% max 10%
-	var criticalChance=this.luck/(this.luck+target.luck*19);
-	if(criticalChance>0.1)criticalChance=0.1;
-	//miss chance ~10% max 50%
-	var missChance=target.agility/(this.dexterity*9+target.agility);
-	if(missChance>0.5)missChance=0.5;
-	//critical
-	if(Math.random()<criticalChance){
-		damage*=3;
-		return [name1+" attacked "+name2+". Critical! "+name2+" took "+damage+" damage...",damage];
-	}
-	//miss
-	else if(Math.random()<missChance){
-		return [name1+" attacked "+name2+". But missed...",0];
-	}
-	//normal attack
-	else return [name1+" attacked "+name2+". "+name2+" took "+damage+" damage...",damage];
-}
-
-Adventurer.prototype.explosion = function(name1, name2, target){
-	return [name1+" used Explosion! "+name2+" exploded...",target.health];
-}
-
-Adventurer.prototype.steal = function(name1, name2, target){
-	//success chance ~50% min 50%
-	var successChance=this.luck/(target.luck+this.luck);
-	if(successChance<0.5)successChance=0.5;
-	//miyuchi safety pantsu
-	if(name2=="Miyuchi")return [name1+" used Steal! But failed...",0];
-	//failed
-	else if(Math.random()>successChance)return [name1+" used Steal! But failed...",0];
-	//success
-	else {
-		this.pantsu++;
-		return [name1+" used Steal! "+name1+" got "+name2+"'s pantsu",0];
-	}
-}
-
-Adventurer.prototype.godblow = function(name1, name2, target){
-	return [name1+" used GOD BLOW! "+name2+" took 1 damage... Pfft",1];
-}
-
-Adventurer.prototype.lightofsaber =  function(name1, name2, target){
-	if(this.jobclass()=="Crusader")
-		return [name1+" used Light of Saber... Just kidding... Tee-hee",0];
-	var randomizer=Math.random()+0.5;
-	var multiplier=this.level/target.level;
-	//limit multiplier 0.5~1.5
-	if(multiplier>1.5)multiplier=1.5;
-	else if(multiplier<0.5)multiplier=0.5;
-	var power=2;
-	var damage=Math.ceil(this.magicpower*multiplier*randomizer*power);
-	return [name1+" used Light of Saber! "+name2+" took "+damage+" damage!",damage];
-}
-
-Adventurer.prototype.partytrick = function(name1, name2, target){
-	if(target.eris==0)return [name1+" used party tricks! That was fun...",0];
-	else{
-		target.eris--;
-		this.eris++;
-		return [name1+" used party tricks! "+name2+" donated 1 eris in awe...",0];
+		else skill-=skills[attack];
 	}
 }
 
