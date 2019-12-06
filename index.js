@@ -213,8 +213,8 @@ function timeString(millis){
 }
 
 var bully=0;
-var word="fuck you";
-var owner="206099144346042369";
+var word="asdfghjkl";
+var owner="000000000000000000";
 
 client.on("message", msg => {
 	if(msg.author.id==client.user.id)return;
